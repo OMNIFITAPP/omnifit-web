@@ -1,0 +1,196 @@
+{
+  "neuro": {
+    "P": {
+      "name": "Reactive Balance Flow",
+      "durationMin": 20,
+      "tierLabel": "Primary",
+      "focus": "Coordination",
+      "mantra": "Quality over speed",
+      "cues": ["Quality over speed", "Breathe through the nose"],
+      "steps": [
+        { "text": "Single-leg stance. Left leg.",  "mode": "auto", "seconds": 60 },
+        { "text": "Single-leg stance. Right leg.", "mode": "auto", "seconds": 60 },
+        { "text": "Cross-crawl with reach.",       "mode": "auto", "seconds": 120 },
+        { "text": "Perturbations, left.",          "mode": "auto", "seconds": 90 },
+        { "text": "Perturbations, right.",         "mode": "auto", "seconds": 90 },
+        { "text": "Figure-8 movement.",            "mode": "auto", "seconds": 180 },
+        { "text": "Reactive catch drill.",         "mode": "auto", "seconds": 120 },
+        { "text": "Stillness, eyes closed.",       "mode": "auto", "seconds": 60 }
+      ]
+    },
+    "S": {
+      "name": "Cross-Crawl Flow",
+      "durationMin": 10,
+      "tierLabel": "Secondary",
+      "focus": "Coordination",
+      "mantra": "Breathe through the nose",
+      "cues": ["Breathe through the nose", "Relax the jaw"],
+      "steps": [
+        { "text": "Stand tall. Breathe slow.",            "mode": "auto", "seconds": 30 },
+        { "text": "Right hand to left knee.",             "mode": "auto", "seconds": 60 },
+        { "text": "Elbow to opposite knee.",              "mode": "auto", "seconds": 90 },
+        { "text": "Slow march, opposite arm and leg.",    "mode": "auto", "seconds": 120 },
+        { "text": "Eyes closed. Notice.",                 "mode": "auto", "seconds": 60 }
+      ]
+    },
+    "M": {
+      "name": "Posture Reset",
+      "durationMin": 3,
+      "tierLabel": "Micro",
+      "focus": "Priming",
+      "mantra": "Full attention",
+      "cues": ["Full attention", "No rush"],
+      "steps": [
+        { "text": "Stand tall.",      "mode": "auto", "seconds": 20 },
+        { "text": "Shoulder rolls.",  "mode": "auto", "seconds": 30 },
+        { "text": "Cross-touch.",     "mode": "auto", "seconds": 60 },
+        { "text": "Stillness.",       "mode": "auto", "seconds": 30 }
+      ]
+    }
+  },
+  "physical": {
+    "P": {
+      "name": "Lower Body Strength",
+      "durationMin": 20,
+      "tierLabel": "Primary",
+      "focus": "Strength",
+      "mantra": "Stop one rep short of failure",
+      "cues": ["Brace the core", "Stop one rep short of failure"],
+      "steps": [
+        { "text": "Warm-up: squats, 2×10.",          "mode": "tap" },
+        { "text": "Goblet squat: set 1, 8 reps.",    "mode": "tap" },
+        { "text": "Rest.",                           "mode": "rest", "seconds": 60 },
+        { "text": "Goblet squat: set 2, 8 reps.",    "mode": "tap" },
+        { "text": "Rest.",                           "mode": "rest", "seconds": 60 },
+        { "text": "Goblet squat: set 3, 8 reps.",    "mode": "tap" },
+        { "text": "Rest.",                           "mode": "rest", "seconds": 60 },
+        { "text": "Goblet squat: set 4, 8 reps.",    "mode": "tap" },
+        { "text": "Romanian deadlift: 4×8.",         "mode": "tap" },
+        { "text": "Reverse lunge: 3×10 each.",       "mode": "tap" },
+        { "text": "Glute bridge: 3×12.",             "mode": "tap" },
+        { "text": "Deep squat hold.",                "mode": "auto", "seconds": 90 }
+      ]
+    },
+    "S": {
+      "name": "Mobility Flow Reset",
+      "durationMin": 10,
+      "tierLabel": "Secondary",
+      "focus": "Mobility",
+      "mantra": "Control over speed",
+      "cues": ["Full range", "Nasal breathing"],
+      "steps": [
+        { "text": "Deep squat hold.",      "mode": "auto", "seconds": 60 },
+        { "text": "Hip 90/90, left.",      "mode": "auto", "seconds": 60 },
+        { "text": "Hip 90/90, right.",     "mode": "auto", "seconds": 60 },
+        { "text": "Thoracic rotations.",   "mode": "auto", "seconds": 90 },
+        { "text": "Shoulder rotations.",   "mode": "auto", "seconds": 60 },
+        { "text": "Ankle rocks.",          "mode": "auto", "seconds": 60 }
+      ]
+    },
+    "M": {
+      "name": "Foot Strength",
+      "durationMin": 5,
+      "tierLabel": "Micro",
+      "focus": "Stability",
+      "mantra": "Slow and deliberate",
+      "cues": ["Three points of the foot"],
+      "steps": [
+        { "text": "Toe spread holds.",         "mode": "auto", "seconds": 30 },
+        { "text": "Short-foot, 10 reps.",      "mode": "tap" },
+        { "text": "Calf raises, 12 each.",     "mode": "tap" },
+        { "text": "Tripod pressure, left.",    "mode": "auto", "seconds": 30 },
+        { "text": "Tripod pressure, right.",   "mode": "auto", "seconds": 30 }
+      ]
+    }
+  },
+  "cognitive": {
+    "P": {
+      "name": "Deep Work Block",
+      "durationMin": 45,
+      "tierLabel": "Primary",
+      "focus": "Attention",
+      "mantra": "One task only",
+      "cues": ["One task only", "Return without judgment"],
+      "steps": [
+        { "text": "Choose one task. Write it down.",     "mode": "tap" },
+        { "text": "Phone in another room.",              "mode": "tap" },
+        { "text": "Work on the one task.",               "mode": "auto", "seconds": 1500 },
+        { "text": "Break. Stand, breathe, look far.",    "mode": "auto", "seconds": 300 },
+        { "text": "Continue.",                           "mode": "auto", "seconds": 900 },
+        { "text": "Note what you completed.",            "mode": "tap" }
+      ]
+    },
+    "S": {
+      "name": "Focused Reading",
+      "durationMin": 20,
+      "tierLabel": "Secondary",
+      "focus": "Attention",
+      "mantra": "Slow reading beats fast",
+      "cues": ["Slow reading beats fast"],
+      "steps": [
+        { "text": "Choose one text.",        "mode": "tap" },
+        { "text": "Read with a pen.",        "mode": "auto", "seconds": 900 },
+        { "text": "Write three sentences.",  "mode": "tap" },
+        { "text": "Close the book.",         "mode": "tap" }
+      ]
+    },
+    "M": {
+      "name": "Single-Task Reset",
+      "durationMin": 5,
+      "tierLabel": "Micro",
+      "focus": "Attention",
+      "mantra": "Even four minutes counts",
+      "cues": ["Even four minutes counts"],
+      "steps": [
+        { "text": "Close all tabs except one.",   "mode": "tap" },
+        { "text": "Work on the one thing.",       "mode": "auto", "seconds": 240 },
+        { "text": "Continue or stop.",            "mode": "tap" }
+      ]
+    }
+  },
+  "emotional": {
+    "P": {
+      "name": "Extended Meditation",
+      "durationMin": 20,
+      "tierLabel": "Primary",
+      "focus": "Regulation",
+      "mantra": "Return is the practice",
+      "cues": ["Wandering is the practice", "Return is the practice"],
+      "steps": [
+        { "text": "Sit comfortably.",            "mode": "auto", "seconds": 30 },
+        { "text": "Close eyes. Breathe.",        "mode": "auto", "seconds": 120 },
+        { "text": "Attention to the breath.",    "mode": "auto", "seconds": 900 },
+        { "text": "Mind wanders, return.",       "mode": "auto", "seconds": 60 },
+        { "text": "Open eyes slowly.",           "mode": "auto", "seconds": 60 }
+      ]
+    },
+    "S": {
+      "name": "Evening Journal",
+      "durationMin": 10,
+      "tierLabel": "Secondary",
+      "focus": "Reflection",
+      "mantra": "Write faster than you think",
+      "cues": ["No editing", "Write faster than you think"],
+      "steps": [
+        { "text": "Paper and pen.",            "mode": "tap" },
+        { "text": "What worked today.",        "mode": "auto", "seconds": 120 },
+        { "text": "What felt hard.",           "mode": "auto", "seconds": 120 },
+        { "text": "What you want tomorrow.",   "mode": "auto", "seconds": 120 },
+        { "text": "Close the journal.",        "mode": "auto", "seconds": 30 }
+      ]
+    },
+    "M": {
+      "name": "Exhale Lengthening",
+      "durationMin": 3,
+      "tierLabel": "Micro",
+      "focus": "Downshift",
+      "mantra": "The exhale does the work",
+      "cues": ["The exhale does the work"],
+      "steps": [
+        { "text": "Soft posture.",           "mode": "auto", "seconds": 20 },
+        { "text": "Inhale 4, exhale 6.",     "mode": "auto", "seconds": 120 },
+        { "text": "One quiet breath.",       "mode": "auto", "seconds": 10 }
+      ]
+    }
+  }
+}

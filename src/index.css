@@ -1,0 +1,95 @@
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;500;600;700&display=swap');
+@import "tailwindcss";
+
+/* ─── Design tokens ─────────────────────────────────────────── */
+/* Plain CSS vars (used via var() in components and inline styles) */
+:root {
+  --cream:        #F5EDE4;
+  --rose:         #F4DCD0;
+  --physical:     #B85C3C;
+  --cognitive:    #2D5F4E;
+  --emotional:    #C97A6B;
+  --neurological: #3A7A7E;
+  --ink:          #3D2817;
+  --ink2:         #7A5544;
+  --line:         rgba(61, 40, 23, 0.08);
+  --card:         #FBF6EF;
+}
+
+/* Tailwind theme — surfaces tokens as bg-cream, text-ink, etc. */
+@theme inline {
+  --font-sans: 'Nunito', -apple-system, BlinkMacSystemFont, sans-serif;
+
+  --color-cream:        #F5EDE4;
+  --color-rose:         #F4DCD0;
+  --color-physical:     #B85C3C;
+  --color-cognitive:    #2D5F4E;
+  --color-emotional:    #C97A6B;
+  --color-neurological: #3A7A7E;
+  --color-ink:          #3D2817;
+  --color-ink2:         #7A5544;
+  --color-card:         #FBF6EF;
+}
+
+/* ─── Base reset ────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  height: 100%;
+  overflow: hidden;
+  background: var(--cream);
+  font-family: 'Nunito', -apple-system, BlinkMacSystemFont, sans-serif;
+  color: var(--ink);
+  font-weight: 400;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overscroll-behavior: none;
+}
+
+#root {
+  height: 100%;
+  overflow: hidden;
+}
+
+/* ─── Screen fade-in animation ──────────────────────────────── */
+@keyframes screenFade {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.screen-enter {
+  animation: screenFade 0.4s ease both;
+}
+
+/* ─── Shared typography primitives (match prototype exactly) ── */
+.eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink2);
+  font-weight: 600;
+}
+
+.section-label {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink2);
+  font-weight: 700;
+  margin: 22px 0 10px;
+}
+
+/* ─── Scrollbar hide ────────────────────────────────────────── */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
