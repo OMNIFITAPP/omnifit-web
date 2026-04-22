@@ -93,7 +93,9 @@ function PracticeFlow({ dim, tier }: { dim: Dimension; tier: 'P' | 'S' | 'M' }) 
     <div
       style={{
         position: 'fixed',
-        inset: 0,
+        top: 0,
+        bottom: 0,
+        width: '100%',
         maxWidth: '430px',
         left: '50%',
         transform: 'translateX(-50%)',
@@ -613,7 +615,9 @@ function NotFound({ onBack }: { onBack: () => void }) {
     <div
       style={{
         position: 'fixed',
-        inset: 0,
+        top: 0,
+        bottom: 0,
+        width: '100%',
         maxWidth: '430px',
         left: '50%',
         transform: 'translateX(-50%)',

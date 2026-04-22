@@ -62,7 +62,9 @@ export function AuthScreen() {
     <div
       style={{
         position: 'fixed',
-        inset: 0,
+        top: 0,
+        bottom: 0,
+        width: '100%',
         maxWidth: '430px',
         left: '50%',
         transform: 'translateX(-50%)',
