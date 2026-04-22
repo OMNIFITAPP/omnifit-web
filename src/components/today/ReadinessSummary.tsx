@@ -2,6 +2,7 @@ import type { ReadinessScores } from '../../store/userStore'
 
 interface ReadinessSummaryProps {
   scores: ReadinessScores
+  title?: string
 }
 
 interface Ring {
@@ -60,7 +61,7 @@ function Ring({ value, color, size = 44 }: { value: number; color: string; size?
   )
 }
 
-export function ReadinessSummary({ scores }: ReadinessSummaryProps) {
+export function ReadinessSummary({ scores, title = 'Readiness' }: ReadinessSummaryProps) {
   return (
     <section
       style={{
@@ -87,7 +88,7 @@ export function ReadinessSummary({ scores }: ReadinessSummaryProps) {
             color: 'var(--ink2)',
           }}
         >
-          Readiness
+          {title}
         </div>
         <div style={{ fontSize: '12px', color: 'var(--ink2)' }}>
           Whole <strong style={{ color: 'var(--ink)' }}>{scores.composite}</strong>

@@ -4,6 +4,8 @@ import { DIM_MAP } from '../data/dims'
 import { getSession, TIER_LABELS } from '../data/sessions'
 import { useSavedStore, type SavedKey } from '../store/savedStore'
 import { useTodayStore } from '../store/todayStore'
+import { useUserStore } from '../store/userStore'
+import { supabase } from '../lib/supabase'
 import type { Dimension, SessionStep } from '../types'
 
 function isValidTier(t: string): t is 'P' | 'S' | 'M' {
@@ -41,6 +43,8 @@ function PracticeFlow({ dim, tier }: { dim: Dimension; tier: 'P' | 'S' | 'M' }) 
   const [stepIndex, setStepIndex] = useState<number>(-1)
   const [paused, setPaused] = useState(false)
   const [remaining, setRemaining] = useState<number>(0) // seconds left in current auto/rest step
+  const [startedAt, setStartedAt] = useState<number | null>(null)
+  const [endedAt, setEndedAt] = useState<number | null>(null)
 
   const current: SessionStep | null =
     stepIndex >= 0 && stepIndex < totalSteps ? session.steps[stepIndex] : null
@@ -80,14 +84,33 @@ function PracticeFlow({ dim, tier }: { dim: Dimension; tier: 'P' | 'S' | 'M' }) 
     setStepIndex((i) => Math.max(i - 1, 0))
   }, [])
 
-  const handleMarkDone = useCallback(() => {
-    if (!alreadyChecked) toggleChecked(dim)
-    navigate(-1)
-  }, [alreadyChecked, dim, navigate, toggleChecked])
-
   const isIntro = stepIndex === -1
   const isComplete = stepIndex >= totalSteps
   const isFirstStep = stepIndex === 0
+
+  // Capture end time once when completion screen appears
+  useEffect(() => {
+    if (isComplete && !endedAt) setEndedAt(Date.now())
+  }, [isComplete, endedAt])
+
+  const durationSec = startedAt && endedAt ? Math.round((endedAt - startedAt) / 1000) : 0
+
+  const handleMarkDone = useCallback((felt: 'easy' | 'right' | 'hard' | null) => {
+    if (!alreadyChecked) toggleChecked(dim)
+    const userId = useUserStore.getState().userId
+    if (userId) {
+      supabase.from('session_completions').insert({
+        user_id: userId,
+        dimension: dim,
+        tier,
+        session_name: session.name,
+        felt,
+        completed_at: new Date().toISOString(),
+        duration_seconds: durationSec,
+      })
+    }
+    navigate(-1)
+  }, [alreadyChecked, dim, tier, session.name, durationSec, navigate, toggleChecked])
 
   return (
     <div
@@ -240,6 +263,8 @@ function PracticeFlow({ dim, tier }: { dim: Dimension; tier: 'P' | 'S' | 'M' }) 
         {isComplete && (
           <CompletionBody
             mantra={session.mantra}
+            sessionName={session.name}
+            durationSec={durationSec}
             alreadyChecked={alreadyChecked}
             onMarkDone={handleMarkDone}
           />
@@ -262,7 +287,7 @@ function PracticeFlow({ dim, tier }: { dim: Dimension; tier: 'P' | 'S' | 'M' }) 
           {isIntro ? (
             <button
               type="button"
-              onClick={() => setStepIndex(0)}
+              onClick={() => { setStartedAt(Date.now()); setStepIndex(0) }}
               style={{
                 flex: 1,
                 padding: '16px',
@@ -538,15 +563,37 @@ function StepBody({
   )
 }
 
+type FeltRating = 'easy' | 'right' | 'hard'
+
 function CompletionBody({
   mantra,
+  sessionName,
+  durationSec,
   alreadyChecked,
   onMarkDone,
 }: {
   mantra: string
+  sessionName: string
+  durationSec: number
   alreadyChecked: boolean
-  onMarkDone: () => void
+  onMarkDone: (felt: FeltRating | null) => void
 }) {
+  const [felt, setFelt] = useState<FeltRating | null>(null)
+  const [copied, setCopied] = useState(false)
+
+  function handleShare() {
+    const mins = Math.max(1, Math.round(durationSec / 60))
+    const text = `Just completed ${sessionName} · ${mins} min · OMNIFIT`
+    if (navigator.share) {
+      navigator.share({ title: 'OMNIFIT', text }).catch(() => {})
+    } else {
+      navigator.clipboard.writeText(text).then(() => {
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2000)
+      })
+    }
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '20px', paddingTop: '20px' }}>
       <div
@@ -586,11 +633,55 @@ function CompletionBody({
         {mantra}
       </p>
 
+      {/* Felt rating */}
+      <div style={{ width: '100%', maxWidth: '320px' }}>
+        <div
+          style={{
+            fontSize: '11px',
+            letterSpacing: '0.12em',
+            textTransform: 'uppercase',
+            color: 'var(--ink2)',
+            fontWeight: 600,
+            marginBottom: '10px',
+          }}
+        >
+          How did that feel?
+        </div>
+        <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+          {(['easy', 'right', 'hard'] as const).map((f) => {
+            const active = felt === f
+            return (
+              <button
+                key={f}
+                type="button"
+                onClick={() => setFelt(f)}
+                style={{
+                  flex: 1,
+                  padding: '10px 0',
+                  borderRadius: '20px',
+                  border: active ? 'none' : '1px solid var(--line)',
+                  background: active ? 'var(--ink)' : 'transparent',
+                  color: active ? 'var(--cream)' : 'var(--ink2)',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  letterSpacing: '0.06em',
+                  textTransform: 'capitalize',
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                  transition: 'background 0.15s ease',
+                }}
+              >
+                {f.charAt(0).toUpperCase() + f.slice(1)}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
       <button
         type="button"
-        onClick={onMarkDone}
+        onClick={() => onMarkDone(felt)}
         style={{
-          marginTop: '16px',
           padding: '16px 28px',
           borderRadius: '24px',
           background: 'var(--ink)',
@@ -602,9 +693,28 @@ function CompletionBody({
           border: 'none',
           cursor: 'pointer',
           fontFamily: 'inherit',
+          width: '100%',
+          maxWidth: '320px',
         }}
       >
         {alreadyChecked ? 'Return to today' : 'Mark as done'}
+      </button>
+
+      <button
+        type="button"
+        onClick={handleShare}
+        style={{
+          background: 'none',
+          border: 'none',
+          fontSize: '12px',
+          color: 'var(--ink2)',
+          cursor: 'pointer',
+          fontFamily: 'inherit',
+          letterSpacing: '0.04em',
+          padding: '0',
+        }}
+      >
+        {copied ? 'Copied' : 'Share'}
       </button>
     </div>
   )

@@ -2,8 +2,11 @@ import { useMemo, useState } from 'react'
 import { WaveChart, type WaveDay } from './WaveChart'
 import { DaySheet } from './DaySheet'
 import { CapacityBars } from './CapacityBars'
+import { MonthlyStats } from './MonthlyStats'
+import { ReadinessSummary } from '../today/ReadinessSummary'
 import { useTodayStore } from '../../store/todayStore'
 import { useWeekStore } from '../../store/weekStore'
+import { useUserStore } from '../../store/userStore'
 import { currentWeek, seedPlanFor, ALL_DONE, dayWeight, weekReading } from '../../data/week'
 import type { DailyPlan, Dimension, Tier, CompletionState } from '../../types'
 
@@ -11,6 +14,8 @@ export function ProgressTab() {
   const todayPlan = useTodayStore((s) => s.plan)
   const todayChecked = useTodayStore((s) => s.checked)
   const setTodayTier = useTodayStore((s) => s.setTier)
+  const activeDims = useUserStore((s) => s.activeDims)
+  const readiness = useUserStore((s) => s.readiness)
 
   const overrides = useWeekStore((s) => s.plans)
   const setDayTier = useWeekStore((s) => s.setDayTier)
@@ -82,7 +87,11 @@ export function ProgressTab() {
         </p>
       </section>
 
-      <CapacityBars />
+      <CapacityBars activeDims={activeDims} />
+
+      <ReadinessSummary scores={readiness} title="Readiness today" />
+
+      <MonthlyStats />
 
       <DaySheet
         open={!!selected}

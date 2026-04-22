@@ -11,7 +11,13 @@ const CAPACITY: Record<Dimension, { value: number; trend: number }> = {
   neuro:     { value: 78, trend:  4 },
 }
 
-export function CapacityBars() {
+interface CapacityBarsProps {
+  activeDims?: Dimension[]
+}
+
+export function CapacityBars({ activeDims }: CapacityBarsProps) {
+  const visible = activeDims ? DIMS.filter((d) => activeDims.includes(d.key as Dimension)) : DIMS
+
   return (
     <section style={{ marginTop: '20px' }}>
       <div
@@ -27,7 +33,7 @@ export function CapacityBars() {
         Capacity
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-        {DIMS.map((dim) => {
+        {visible.map((dim) => {
           const c = CAPACITY[dim.key]
           const up = c.trend > 0
           const flat = c.trend === 0

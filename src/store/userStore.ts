@@ -13,6 +13,8 @@ export interface ReadinessScores {
 
 export type PlanTier = 'monthly' | 'annual' | 'founding'
 
+const ALL_DIMS: Dimension[] = ['neuro', 'physical', 'cognitive', 'emotional']
+
 interface UserState {
   // Identity
   userId: string | null
@@ -25,6 +27,10 @@ interface UserState {
   focusDim: Dimension | null
   isOnboarded: boolean
   memberSince: string           // ISO date (yyyy-mm-dd)
+
+  // Preferences
+  followMode: boolean           // true = app-selected plan, false = manual
+  activeDims: Dimension[]       // dims shown on Today; all 4 by default
 
   // Billing
   subscriptionStatus: SubscriptionStatus
@@ -51,6 +57,8 @@ interface UserActions {
     stripeCustomerId?: string | null
     stripeSubscriptionId?: string | null
   }) => void
+  setFollowMode: (v: boolean) => void
+  toggleActiveDim: (dim: Dimension) => void
   reset: () => void
 }
 
@@ -64,6 +72,9 @@ const DEFAULT_STATE: UserState = {
   focusDim: null,
   isOnboarded: false,
   memberSince: '',
+
+  followMode: true,
+  activeDims: [...ALL_DIMS],
 
   subscriptionStatus: 'trial',
   planTier: null,
@@ -101,6 +112,20 @@ export const useUserStore = create<UserState & UserActions>()(
           stripeCustomerId: stripeCustomerId ?? s.stripeCustomerId,
           stripeSubscriptionId: stripeSubscriptionId ?? s.stripeSubscriptionId,
         })),
+
+      setFollowMode: (v) => set({ followMode: v }),
+
+      toggleActiveDim: (dim) =>
+        set((s) => {
+          const isActive = s.activeDims.includes(dim)
+          // Always keep at least one dimension active
+          if (isActive && s.activeDims.length === 1) return s
+          return {
+            activeDims: isActive
+              ? s.activeDims.filter((d) => d !== dim)
+              : [...s.activeDims, dim],
+          }
+        }),
 
       reset: () => set(DEFAULT_STATE),
     }),

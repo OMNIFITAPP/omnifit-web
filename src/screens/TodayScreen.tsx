@@ -4,19 +4,23 @@ import { DIMS } from '../data/dims'
 import { useUserStore } from '../store/userStore'
 import { useTodayStore } from '../store/todayStore'
 import { fmtDate, greet, greetDone } from '../data/greetings'
+import { followPlanFor, planSubtitle } from '../data/followPlan'
 import { DimensionCard } from '../components/today/DimensionCard'
 import { SwapSheet } from '../components/today/SwapSheet'
-import { ReadinessSummary } from '../components/today/ReadinessSummary'
 import { DailyQuote } from '../components/today/DailyQuote'
 import { computeTrial } from '../lib/trial'
-import type { DimConfig, Tier, Dimension } from '../types'
+import type { DimConfig, Tier, Dimension, DailyPlan } from '../types'
 
 export function TodayScreen() {
   const navigate = useNavigate()
   const name = useUserStore((s) => s.name)
-  const readiness = useUserStore((s) => s.readiness)
   const subscriptionStatus = useUserStore((s) => s.subscriptionStatus)
   const trialStartedAt = useUserStore((s) => s.trialStartedAt)
+  const followMode = useUserStore((s) => s.followMode)
+  const setFollowMode = useUserStore((s) => s.setFollowMode)
+  const activeDims = useUserStore((s) => s.activeDims)
+  const focusDim = useUserStore((s) => s.focusDim)
+
   const plan = useTodayStore((s) => s.plan)
   const checked = useTodayStore((s) => s.checked)
   const setTier = useTodayStore((s) => s.setTier)
@@ -29,11 +33,18 @@ export function TodayScreen() {
     ensureFreshDay()
   }, [ensureFreshDay])
 
-  const activeDims = DIMS.filter((d) => plan[d.key] !== 'R')
+  const effectivePlan: DailyPlan = followMode
+    ? followPlanFor(focusDim, activeDims)
+    : plan
+
+  const visibleDims = DIMS.filter((d) => activeDims.includes(d.key as Dimension))
+  const practiceableDims = visibleDims.filter((d) => effectivePlan[d.key as Dimension] !== 'R')
   const dayComplete =
-    activeDims.length > 0 && activeDims.every((d) => checked[d.key])
+    practiceableDims.length > 0 &&
+    practiceableDims.every((d) => checked[d.key as Dimension])
 
   const g = dayComplete ? greetDone(name) : greet(name)
+  const subtitle = dayComplete ? g.s : planSubtitle(effectivePlan, activeDims)
   const trial = subscriptionStatus === 'trial' ? computeTrial(trialStartedAt) : null
 
   return (
@@ -72,7 +83,7 @@ export function TodayScreen() {
             marginTop: '3px',
           }}
         >
-          {g.s}
+          {subtitle}
         </div>
         {trial && !trial.expired && (
           <div
@@ -94,32 +105,76 @@ export function TodayScreen() {
         )}
       </div>
 
+      {/* Follow / Choose toggle */}
+      <div
+        role="tablist"
+        style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          background: 'var(--card)',
+          border: '1px solid var(--line)',
+          borderRadius: '12px',
+          padding: '3px',
+          gap: '3px',
+          marginBottom: '16px',
+          width: '176px',
+        }}
+      >
+        {(['follow', 'choose'] as const).map((mode) => {
+          const active = mode === 'follow' ? followMode : !followMode
+          return (
+            <button
+              key={mode}
+              role="tab"
+              aria-selected={active}
+              type="button"
+              onClick={() => setFollowMode(mode === 'follow')}
+              style={{
+                fontSize: '11px',
+                fontWeight: 600,
+                letterSpacing: '0.04em',
+                padding: '7px 4px',
+                borderRadius: '9px',
+                border: 'none',
+                background: active ? 'var(--ink)' : 'transparent',
+                color: active ? 'var(--cream)' : 'var(--ink2)',
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+                textTransform: 'uppercase',
+              }}
+            >
+              {mode === 'follow' ? 'Follow' : 'Choose'}
+            </button>
+          )
+        })}
+      </div>
+
       {/* Dimension cards */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-        {DIMS.map((dim) => (
+        {visibleDims.map((dim) => (
           <DimensionCard
             key={dim.key}
             dim={dim}
-            tier={plan[dim.key] as Tier}
-            checked={checked[dim.key]}
+            tier={effectivePlan[dim.key as Dimension] as Tier}
+            checked={checked[dim.key as Dimension]}
             dayComplete={dayComplete}
+            allowSwap={!followMode}
             onOpenDetail={() => {
-              const t = plan[dim.key]
+              const t = effectivePlan[dim.key as Dimension]
               if (t !== 'R') navigate(`/session/${dim.key}/${t}`)
             }}
             onOpenSwap={() => setSwapDim(dim)}
-            onToggleCheck={() => toggleChecked(dim.key)}
+            onToggleCheck={() => toggleChecked(dim.key as Dimension)}
           />
         ))}
       </div>
 
-      <ReadinessSummary scores={readiness} />
       <DailyQuote />
 
       <SwapSheet
         open={!!swapDim}
         dim={swapDim}
-        currentTier={swapDim ? (plan[swapDim.key] as Tier) : 'P'}
+        currentTier={swapDim ? (effectivePlan[swapDim.key as Dimension] as Tier) : 'P'}
         onSelect={(tier) => swapDim && setTier(swapDim.key as Dimension, tier)}
         onClose={() => setSwapDim(null)}
       />

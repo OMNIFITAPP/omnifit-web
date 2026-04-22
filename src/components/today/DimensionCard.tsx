@@ -6,6 +6,7 @@ interface DimensionCardProps {
   tier: Tier
   checked: boolean
   dayComplete: boolean
+  allowSwap?: boolean
   onOpenDetail: () => void
   onOpenSwap: () => void
   onToggleCheck: () => void
@@ -16,6 +17,7 @@ export function DimensionCard({
   tier,
   checked,
   dayComplete,
+  allowSwap = true,
   onOpenDetail,
   onOpenSwap,
   onToggleCheck,
@@ -137,25 +139,27 @@ export function DimensionCard({
           <span>
             {session.durationMin} min · {session.tierLabel}
           </span>
-          <button
-            type="button"
-            aria-label="Swap session"
-            onClick={(e) => {
-              e.stopPropagation()
-              onOpenSwap()
-            }}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              padding: '2px 4px',
-              cursor: 'pointer',
-              color: 'var(--ink2)',
-              fontSize: '13px',
-              lineHeight: 1,
-            }}
-          >
-            ⇄
-          </button>
+          {allowSwap && (
+            <button
+              type="button"
+              aria-label="Swap session"
+              onClick={(e) => {
+                e.stopPropagation()
+                onOpenSwap()
+              }}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                padding: '2px 4px',
+                cursor: 'pointer',
+                color: 'var(--ink2)',
+                fontSize: '13px',
+                lineHeight: 1,
+              }}
+            >
+              ⇄
+            </button>
+          )}
         </div>
       </div>
 

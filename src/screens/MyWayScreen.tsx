@@ -1,15 +1,13 @@
 import { useState } from 'react'
 import { ProgressTab } from '../components/myway/ProgressTab'
 import { SavedTab } from '../components/myway/SavedTab'
-import { TimerTab } from '../components/myway/TimerTab'
 import { AccountTab } from '../components/myway/AccountTab'
 
-type TabKey = 'progress' | 'saved' | 'timer' | 'account'
+type TabKey = 'progress' | 'saved' | 'account'
 
 const TABS: Array<{ key: TabKey; label: string }> = [
   { key: 'progress', label: 'Progress' },
   { key: 'saved',    label: 'Saved'    },
-  { key: 'timer',    label: 'Timer'    },
   { key: 'account',  label: 'Account'  },
 ]
 
@@ -35,7 +33,7 @@ export function MyWayScreen() {
         role="tablist"
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(4, 1fr)',
+          gridTemplateColumns: 'repeat(3, 1fr)',
           background: 'var(--card)',
           border: '1px solid var(--line)',
           borderRadius: '14px',
@@ -73,7 +71,6 @@ export function MyWayScreen() {
 
       {tab === 'progress' && <ProgressTab />}
       {tab === 'saved'    && <SavedTab />}
-      {tab === 'timer'    && <TimerTab />}
       {tab === 'account'  && <AccountTab />}
     </div>
   )

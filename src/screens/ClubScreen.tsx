@@ -4,13 +4,13 @@ import { ShelfTab } from '../components/club/ShelfTab'
 import { CirclesTab } from '../components/club/CirclesTab'
 import { VoicesTab } from '../components/club/VoicesTab'
 
-type RoomKey = 'talk' | 'shelf' | 'circles' | 'voices'
+type RoomKey = 'talk' | 'voices' | 'circles' | 'shelf'
 
 const ROOMS: Array<{ key: RoomKey; label: string }> = [
   { key: 'talk',    label: 'Talk'    },
-  { key: 'shelf',   label: 'Shelf'   },
-  { key: 'circles', label: 'Circles' },
   { key: 'voices',  label: 'Voices'  },
+  { key: 'circles', label: 'Circles' },
+  { key: 'shelf',   label: 'Shelf'   },
 ]
 
 export function ClubScreen() {
@@ -71,9 +71,9 @@ export function ClubScreen() {
       </div>
 
       {room === 'talk'    && <TalkTab />}
-      {room === 'shelf'   && <ShelfTab />}
-      {room === 'circles' && <CirclesTab />}
       {room === 'voices'  && <VoicesTab />}
+      {room === 'circles' && <CirclesTab />}
+      {room === 'shelf'   && <ShelfTab />}
     </div>
   )
 }
