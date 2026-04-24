@@ -70,10 +70,19 @@ export function ClubScreen() {
         })}
       </div>
 
-      {room === 'talk'    && <TalkTab />}
-      {room === 'voices'  && <VoicesTab />}
-      {room === 'circles' && <CirclesTab />}
-      {room === 'shelf'   && <ShelfTab />}
+      <div
+        style={{
+          position: 'relative',
+          background: 'var(--cream)',
+          zIndex: 1,
+          minHeight: '200px',
+        }}
+      >
+        {room === 'talk'    && <TalkTab />}
+        {room === 'voices'  && <VoicesTab />}
+        {room === 'circles' && <CirclesTab />}
+        {room === 'shelf'   && <ShelfTab />}
+      </div>
     </div>
   )
 }

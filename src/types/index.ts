@@ -11,6 +11,7 @@ export interface SessionStep {
   text: string
   mode: 'auto' | 'tap' | 'rest'
   seconds?: number
+  cue?: string          // per-step contextual cue (short, italic)
 }
 
 export interface Session {

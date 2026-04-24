@@ -4,6 +4,7 @@ import { DaySheet } from './DaySheet'
 import { CapacityBars } from './CapacityBars'
 import { MonthlyStats } from './MonthlyStats'
 import { ReadinessSummary } from '../today/ReadinessSummary'
+import { ReadinessSheet } from './ReadinessSheet'
 import { useTodayStore } from '../../store/todayStore'
 import { useWeekStore } from '../../store/weekStore'
 import { useUserStore } from '../../store/userStore'
@@ -21,6 +22,7 @@ export function ProgressTab() {
   const setDayTier = useWeekStore((s) => s.setDayTier)
 
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
+  const [readinessOpen, setReadinessOpen] = useState(false)
 
   const days: WaveDay[] = useMemo(() => {
     return currentWeek().map((d) => {
@@ -89,7 +91,8 @@ export function ProgressTab() {
 
       <CapacityBars activeDims={activeDims} />
 
-      <ReadinessSummary scores={readiness} title="Readiness today" />
+      <ReadinessSummary scores={readiness} title="Readiness today" onTap={() => setReadinessOpen(true)} />
+      <ReadinessSheet open={readinessOpen} onClose={() => setReadinessOpen(false)} />
 
       <MonthlyStats />
 

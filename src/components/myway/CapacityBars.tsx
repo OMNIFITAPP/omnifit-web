@@ -1,4 +1,7 @@
+import { useEffect, useState } from 'react'
 import { DIMS } from '../../data/dims'
+import { supabase } from '../../lib/supabase'
+import { useUserStore } from '../../store/userStore'
 import type { Dimension } from '../../types'
 
 // MVP: static values. TODO(v2): replace with Supabase `capacity_scores` table
@@ -15,8 +18,42 @@ interface CapacityBarsProps {
   activeDims?: Dimension[]
 }
 
+type FeltNotes = Partial<Record<Dimension, string>>
+
 export function CapacityBars({ activeDims }: CapacityBarsProps) {
   const visible = activeDims ? DIMS.filter((d) => activeDims.includes(d.key as Dimension)) : DIMS
+  const [feltNotes, setFeltNotes] = useState<FeltNotes>({})
+
+  useEffect(() => {
+    const userId = useUserStore.getState().userId
+    if (!userId) return
+    let cancelled = false
+    const since = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString()
+    supabase
+      .from('session_completions')
+      .select('dimension, felt, completed_at')
+      .eq('user_id', userId)
+      .gte('completed_at', since)
+      .then(({ data }) => {
+        if (cancelled || !data) return
+        const byDim: Record<string, string[]> = {}
+        for (const r of data as Array<{ dimension: string; felt: string | null }>) {
+          if (!r.felt) continue
+          byDim[r.dimension] = byDim[r.dimension] ?? []
+          byDim[r.dimension].push(r.felt)
+        }
+        const notes: FeltNotes = {}
+        for (const [dim, felts] of Object.entries(byDim)) {
+          if (felts.length < 3) continue
+          const counts: Record<string, number> = {}
+          for (const f of felts) counts[f] = (counts[f] ?? 0) + 1
+          const top = Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0]
+          notes[dim as Dimension] = top
+        }
+        setFeltNotes(notes)
+      })
+    return () => { cancelled = true }
+  }, [])
 
   return (
     <section style={{ marginTop: '20px' }}>
@@ -37,6 +74,7 @@ export function CapacityBars({ activeDims }: CapacityBarsProps) {
           const c = CAPACITY[dim.key]
           const up = c.trend > 0
           const flat = c.trend === 0
+          const felt = feltNotes[dim.key as Dimension]
           return (
             <div key={dim.key}>
               <div
@@ -89,6 +127,18 @@ export function CapacityBars({ activeDims }: CapacityBarsProps) {
                   }}
                 />
               </div>
+              {felt && (
+                <div
+                  style={{
+                    fontSize: '11px',
+                    color: 'var(--ink2)',
+                    fontStyle: 'italic',
+                    marginTop: '6px',
+                  }}
+                >
+                  This dimension has felt {felt} lately.
+                </div>
+              )}
             </div>
           )
         })}

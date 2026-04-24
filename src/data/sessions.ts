@@ -11,7 +11,7 @@ interface SessionJson {
   focus: string
   mantra: string
   cues: string[]
-  steps: Array<{ text: string; mode: 'auto' | 'tap' | 'rest'; seconds?: number }>
+  steps: Array<{ text: string; mode: 'auto' | 'tap' | 'rest'; seconds?: number; cue?: string }>
 }
 
 const DATA = sessionsJson as SessionsFile

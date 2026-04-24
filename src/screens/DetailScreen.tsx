@@ -6,6 +6,7 @@ import { useSavedStore, type SavedKey } from '../store/savedStore'
 import { useTodayStore } from '../store/todayStore'
 import { useUserStore } from '../store/userStore'
 import { supabase } from '../lib/supabase'
+import { playChime } from '../lib/chime'
 import type { Dimension, SessionStep } from '../types'
 
 function isValidTier(t: string): t is 'P' | 'S' | 'M' {
@@ -88,10 +89,44 @@ function PracticeFlow({ dim, tier }: { dim: Dimension; tier: 'P' | 'S' | 'M' }) 
   const isComplete = stepIndex >= totalSteps
   const isFirstStep = stepIndex === 0
 
-  // Capture end time once when completion screen appears
+  // Capture end time + play chime once when completion screen appears
   useEffect(() => {
-    if (isComplete && !endedAt) setEndedAt(Date.now())
+    if (isComplete && !endedAt) {
+      setEndedAt(Date.now())
+      if (useUserStore.getState().completionSound) playChime()
+    }
   }, [isComplete, endedAt])
+
+  // Load past felt ratings for this session → "Last time: …" / "Usually feels: …"
+  const [feltSummary, setFeltSummary] = useState<string | null>(null)
+  useEffect(() => {
+    const userId = useUserStore.getState().userId
+    if (!userId) return
+    let cancelled = false
+    supabase
+      .from('session_completions')
+      .select('felt, completed_at')
+      .eq('user_id', userId)
+      .eq('dimension', dim)
+      .eq('tier', tier)
+      .order('completed_at', { ascending: false })
+      .limit(10)
+      .then(({ data }) => {
+        if (cancelled || !data || data.length === 0) return
+        const rated = data.filter((r) => r.felt) as Array<{ felt: string }>
+        if (rated.length === 0) return
+        if (rated.length >= 3) {
+          const counts: Record<string, number> = {}
+          for (const r of rated) counts[r.felt] = (counts[r.felt] ?? 0) + 1
+          const top = Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0]
+          setFeltSummary(`Usually feels: ${top.charAt(0).toUpperCase()}${top.slice(1)}`)
+        } else {
+          const last = rated[0].felt
+          setFeltSummary(`Last time: ${last.charAt(0).toUpperCase()}${last.slice(1)}`)
+        }
+      })
+    return () => { cancelled = true }
+  }, [dim, tier])
 
   const durationSec = startedAt && endedAt ? Math.round((endedAt - startedAt) / 1000) : 0
 
@@ -214,6 +249,11 @@ function PracticeFlow({ dim, tier }: { dim: Dimension; tier: 'P' | 'S' | 'M' }) 
         <div style={{ marginTop: '10px', fontSize: '13px', opacity: 0.9 }}>
           {session.durationMin} min · {TIER_LABELS[tier]} · {session.focus}
         </div>
+        {feltSummary && isIntro && (
+          <div style={{ marginTop: '6px', fontSize: '12px', opacity: 0.85, fontStyle: 'italic' }}>
+            {feltSummary}
+          </div>
+        )}
 
         {/* Step progress bar — only while in flow */}
         {!isIntro && (
@@ -253,7 +293,7 @@ function PracticeFlow({ dim, tier }: { dim: Dimension; tier: 'P' | 'S' | 'M' }) 
         {current && (
           <StepBody
             step={current}
-            cue={session.cues[stepIndex] ?? session.cues[session.cues.length - 1] ?? ''}
+            mantra={session.mantra}
             remaining={remaining}
             paused={paused}
             stepNumber={stepIndex + 1}
@@ -459,7 +499,7 @@ function IntroBody({
                 display: 'flex',
                 gap: '12px',
                 alignItems: 'baseline',
-                fontSize: '14px',
+                fontSize: '17px',
                 color: 'var(--ink)',
                 lineHeight: 1.5,
               }}
@@ -486,14 +526,14 @@ function IntroBody({
 
 function StepBody({
   step,
-  cue,
+  mantra,
   remaining,
   paused,
   stepNumber,
   totalSteps,
 }: {
   step: SessionStep
-  cue: string
+  mantra: string
   remaining: number
   paused: boolean
   stepNumber: number
@@ -501,7 +541,20 @@ function StepBody({
 }) {
   const showTimer = step.mode === 'auto' || step.mode === 'rest'
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '24px', paddingTop: '12px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '20px', paddingTop: '4px' }}>
+      {/* Persistent mantra — the philosophy of the session */}
+      <div
+        style={{
+          fontSize: '13px',
+          fontStyle: 'italic',
+          color: 'var(--ink2)',
+          lineHeight: 1.5,
+          maxWidth: '320px',
+        }}
+      >
+        {mantra}
+      </div>
+
       <div
         style={{
           fontSize: '10px',
@@ -534,21 +587,25 @@ function StepBody({
 
       <p
         style={{
-          fontSize: '20px',
+          fontSize: '30px',
           fontWeight: 500,
-          lineHeight: 1.35,
+          lineHeight: 1.25,
+          letterSpacing: '-0.01em',
           color: 'var(--ink)',
           margin: 0,
-          maxWidth: '320px',
+          maxWidth: '360px',
+          wordBreak: 'normal',
+          overflowWrap: 'break-word',
+          hyphens: 'auto',
         }}
       >
         {step.text}
       </p>
 
-      {cue && (
+      {step.cue && (
         <p
           style={{
-            fontSize: '14px',
+            fontSize: '13px',
             fontStyle: 'italic',
             color: 'var(--ink2)',
             lineHeight: 1.5,
@@ -556,7 +613,7 @@ function StepBody({
             maxWidth: '320px',
           }}
         >
-          {cue}
+          {step.cue}
         </p>
       )}
     </div>

@@ -3,6 +3,7 @@ import type { ReadinessScores } from '../../store/userStore'
 interface ReadinessSummaryProps {
   scores: ReadinessScores
   title?: string
+  onTap?: () => void
 }
 
 interface Ring {
@@ -61,14 +62,22 @@ function Ring({ value, color, size = 44 }: { value: number; color: string; size?
   )
 }
 
-export function ReadinessSummary({ scores, title = 'Readiness' }: ReadinessSummaryProps) {
+export function ReadinessSummary({ scores, title = 'Readiness', onTap }: ReadinessSummaryProps) {
+  const Tag = onTap ? 'button' : 'section'
   return (
-    <section
+    <Tag
+      {...(onTap ? { type: 'button' as const, onClick: onTap } : {})}
       style={{
         background: 'var(--rose)',
         borderRadius: '20px',
         padding: '16px 18px',
         marginTop: '16px',
+        border: 'none',
+        width: '100%',
+        textAlign: 'left',
+        fontFamily: 'inherit',
+        cursor: onTap ? 'pointer' : 'default',
+        display: 'block',
       }}
     >
       <div
@@ -116,6 +125,6 @@ export function ReadinessSummary({ scores, title = 'Readiness' }: ReadinessSumma
           </div>
         ))}
       </div>
-    </section>
+    </Tag>
   )
 }

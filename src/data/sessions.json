@@ -5,17 +5,17 @@
       "durationMin": 20,
       "tierLabel": "Primary",
       "focus": "Coordination",
-      "mantra": "Quality over speed",
-      "cues": ["Quality over speed", "Breathe through the nose"],
+      "mantra": "Quality over speed.",
+      "cues": ["Quality over speed"],
       "steps": [
-        { "text": "Single-leg stance. Left leg.",  "mode": "auto", "seconds": 60 },
-        { "text": "Single-leg stance. Right leg.", "mode": "auto", "seconds": 60 },
-        { "text": "Cross-crawl with reach.",       "mode": "auto", "seconds": 120 },
-        { "text": "Perturbations, left.",          "mode": "auto", "seconds": 90 },
-        { "text": "Perturbations, right.",         "mode": "auto", "seconds": 90 },
-        { "text": "Figure-8 movement.",            "mode": "auto", "seconds": 180 },
-        { "text": "Reactive catch drill.",         "mode": "auto", "seconds": 120 },
-        { "text": "Stillness, eyes closed.",       "mode": "auto", "seconds": 60 }
+        { "text": "Single-leg stance. Left leg.",                "mode": "auto", "seconds": 60,  "cue": "Soft knee. Micro-sways are fine." },
+        { "text": "Single-leg stance. Right leg.",               "mode": "auto", "seconds": 60,  "cue": "Same story. Find your tripod." },
+        { "text": "Cross-crawl with reach. 2 minutes.",          "mode": "auto", "seconds": 120, "cue": "Opposite elbow to opposite knee." },
+        { "text": "Perturbations, left side.",                   "mode": "auto", "seconds": 90,  "cue": "Gentle pushes. Stay standing." },
+        { "text": "Perturbations, right side.",                  "mode": "auto", "seconds": 90,  "cue": "Same, mirrored." },
+        { "text": "Figure-8 movement. 3 minutes.",               "mode": "auto", "seconds": 180, "cue": "Lead with the head. Follow with the feet." },
+        { "text": "Reactive catch drill. 2 minutes.",            "mode": "auto", "seconds": 120, "cue": "Eyes on the target." },
+        { "text": "Stillness, eyes closed.",                     "mode": "auto", "seconds": 60,  "cue": "Feel your base. Breathe." }
       ]
     },
     "S": {
@@ -23,14 +23,14 @@
       "durationMin": 10,
       "tierLabel": "Secondary",
       "focus": "Coordination",
-      "mantra": "Breathe through the nose",
-      "cues": ["Breathe through the nose", "Relax the jaw"],
+      "mantra": "Breathe through the nose.",
+      "cues": ["Breathe through the nose"],
       "steps": [
-        { "text": "Stand tall. Breathe slow.",            "mode": "auto", "seconds": 30 },
-        { "text": "Right hand to left knee.",             "mode": "auto", "seconds": 60 },
-        { "text": "Elbow to opposite knee.",              "mode": "auto", "seconds": 90 },
-        { "text": "Slow march, opposite arm and leg.",    "mode": "auto", "seconds": 120 },
-        { "text": "Eyes closed. Notice.",                 "mode": "auto", "seconds": 60 }
+        { "text": "Stand tall. Breathe slow.",                   "mode": "auto", "seconds": 30,  "cue": "Tall spine. Soft knees." },
+        { "text": "Right hand to left knee. 1 minute.",          "mode": "auto", "seconds": 60,  "cue": "Full range. Touch, then release." },
+        { "text": "Elbow to opposite knee. 1.5 minutes.",        "mode": "auto", "seconds": 90,  "cue": "Rotate through the ribs." },
+        { "text": "Slow march, opposite arm and leg.",           "mode": "auto", "seconds": 120, "cue": "Steady rhythm. No rush." },
+        { "text": "Eyes closed. Notice.",                        "mode": "auto", "seconds": 60,  "cue": "What do you feel now?" }
       ]
     },
     "M": {
@@ -38,13 +38,13 @@
       "durationMin": 3,
       "tierLabel": "Micro",
       "focus": "Priming",
-      "mantra": "Full attention",
-      "cues": ["Full attention", "No rush"],
+      "mantra": "Full attention.",
+      "cues": ["Full attention"],
       "steps": [
-        { "text": "Stand tall.",      "mode": "auto", "seconds": 20 },
-        { "text": "Shoulder rolls.",  "mode": "auto", "seconds": 30 },
-        { "text": "Cross-touch.",     "mode": "auto", "seconds": 60 },
-        { "text": "Stillness.",       "mode": "auto", "seconds": 30 }
+        { "text": "Stand tall.",                                 "mode": "auto", "seconds": 20, "cue": "Crown of the head to the sky." },
+        { "text": "Shoulder rolls.",                             "mode": "auto", "seconds": 30, "cue": "Slow, full circles." },
+        { "text": "Cross-touch. Opposite hand to knee.",         "mode": "auto", "seconds": 60, "cue": "Switch sides with rhythm." },
+        { "text": "Stillness.",                                  "mode": "auto", "seconds": 30, "cue": "Breathe. Settle." }
       ]
     }
   },
@@ -54,21 +54,21 @@
       "durationMin": 20,
       "tierLabel": "Primary",
       "focus": "Strength",
-      "mantra": "Stop one rep short of failure",
-      "cues": ["Brace the core", "Stop one rep short of failure"],
+      "mantra": "Stop one rep short of failure.",
+      "cues": ["Brace the core"],
       "steps": [
-        { "text": "Warm-up: squats, 2×10.",          "mode": "tap" },
-        { "text": "Goblet squat: set 1, 8 reps.",    "mode": "tap" },
-        { "text": "Rest.",                           "mode": "rest", "seconds": 60 },
-        { "text": "Goblet squat: set 2, 8 reps.",    "mode": "tap" },
-        { "text": "Rest.",                           "mode": "rest", "seconds": 60 },
-        { "text": "Goblet squat: set 3, 8 reps.",    "mode": "tap" },
-        { "text": "Rest.",                           "mode": "rest", "seconds": 60 },
-        { "text": "Goblet squat: set 4, 8 reps.",    "mode": "tap" },
-        { "text": "Romanian deadlift: 4×8.",         "mode": "tap" },
-        { "text": "Reverse lunge: 3×10 each.",       "mode": "tap" },
-        { "text": "Glute bridge: 3×12.",             "mode": "tap" },
-        { "text": "Deep squat hold.",                "mode": "auto", "seconds": 90 }
+        { "text": "Warm-up. Bodyweight squats, 2 sets × 10 reps.",  "mode": "tap",                 "cue": "Move through full range. Wake the muscles." },
+        { "text": "Goblet squat. Set 1 of 4 × 8 reps.",              "mode": "tap",                 "cue": "Brace the core. Controlled descent." },
+        { "text": "Rest.",                                          "mode": "rest", "seconds": 60, "cue": "Breathe. Reset." },
+        { "text": "Goblet squat. Set 2 of 4 × 8 reps.",              "mode": "tap",                 "cue": "Drive through the heel." },
+        { "text": "Rest.",                                          "mode": "rest", "seconds": 60, "cue": "Breathe. Reset." },
+        { "text": "Goblet squat. Set 3 of 4 × 8 reps.",              "mode": "tap",                 "cue": "Same form. Keep it clean." },
+        { "text": "Rest.",                                          "mode": "rest", "seconds": 60, "cue": "Breathe. Reset." },
+        { "text": "Goblet squat. Set 4 of 4 × 8 reps.",              "mode": "tap",                 "cue": "Last set. Finish strong." },
+        { "text": "Romanian deadlift. 4 sets × 8 reps.",             "mode": "tap",                 "cue": "Hinge at the hips. Soft knees." },
+        { "text": "Reverse lunge. 3 sets × 10 reps each leg.",       "mode": "tap",                 "cue": "Step back with control." },
+        { "text": "Glute bridge. 3 sets × 12 reps.",                 "mode": "tap",                 "cue": "Squeeze at the top. Two-second hold." },
+        { "text": "Deep squat hold.",                               "mode": "auto", "seconds": 90, "cue": "Let the hips open. Breathe low." }
       ]
     },
     "S": {
@@ -76,15 +76,15 @@
       "durationMin": 10,
       "tierLabel": "Secondary",
       "focus": "Mobility",
-      "mantra": "Control over speed",
-      "cues": ["Full range", "Nasal breathing"],
+      "mantra": "Control over speed.",
+      "cues": ["Full range"],
       "steps": [
-        { "text": "Deep squat hold.",      "mode": "auto", "seconds": 60 },
-        { "text": "Hip 90/90, left.",      "mode": "auto", "seconds": 60 },
-        { "text": "Hip 90/90, right.",     "mode": "auto", "seconds": 60 },
-        { "text": "Thoracic rotations.",   "mode": "auto", "seconds": 90 },
-        { "text": "Shoulder rotations.",   "mode": "auto", "seconds": 60 },
-        { "text": "Ankle rocks.",          "mode": "auto", "seconds": 60 }
+        { "text": "Deep squat hold.",                            "mode": "auto", "seconds": 60, "cue": "Heels down. Elbows push knees wide." },
+        { "text": "Hip 90/90, left side.",                       "mode": "auto", "seconds": 60, "cue": "Front knee in line with the hip." },
+        { "text": "Hip 90/90, right side.",                      "mode": "auto", "seconds": 60, "cue": "Mirror the other side." },
+        { "text": "Thoracic rotations. 1.5 minutes.",            "mode": "auto", "seconds": 90, "cue": "Reach behind. Follow with the eyes." },
+        { "text": "Shoulder rotations.",                         "mode": "auto", "seconds": 60, "cue": "Slow, full circles." },
+        { "text": "Ankle rocks.",                                "mode": "auto", "seconds": 60, "cue": "Forward, back, side to side." }
       ]
     },
     "M": {
@@ -92,14 +92,14 @@
       "durationMin": 5,
       "tierLabel": "Micro",
       "focus": "Stability",
-      "mantra": "Slow and deliberate",
+      "mantra": "Slow and deliberate.",
       "cues": ["Three points of the foot"],
       "steps": [
-        { "text": "Toe spread holds.",         "mode": "auto", "seconds": 30 },
-        { "text": "Short-foot, 10 reps.",      "mode": "tap" },
-        { "text": "Calf raises, 12 each.",     "mode": "tap" },
-        { "text": "Tripod pressure, left.",    "mode": "auto", "seconds": 30 },
-        { "text": "Tripod pressure, right.",   "mode": "auto", "seconds": 30 }
+        { "text": "Toe spread holds. 3 sets × 10 seconds.",       "mode": "auto", "seconds": 30, "cue": "Press all five toes wide and down." },
+        { "text": "Short-foot. 2 sets × 10 reps.",                "mode": "tap",                 "cue": "Dome the arch without curling toes." },
+        { "text": "Calf raises. 2 sets × 12 reps each leg.",      "mode": "tap",                 "cue": "Rise slow. Lower slower." },
+        { "text": "Tripod pressure, left foot.",                  "mode": "auto", "seconds": 30, "cue": "Three points equal — big toe, pinky, heel." },
+        { "text": "Tripod pressure, right foot.",                 "mode": "auto", "seconds": 30, "cue": "Same, other side." }
       ]
     }
   },
@@ -109,15 +109,15 @@
       "durationMin": 45,
       "tierLabel": "Primary",
       "focus": "Attention",
-      "mantra": "One task only",
-      "cues": ["One task only", "Return without judgment"],
+      "mantra": "One task only.",
+      "cues": ["Return without judgment"],
       "steps": [
-        { "text": "Choose one task. Write it down.",     "mode": "tap" },
-        { "text": "Phone in another room.",              "mode": "tap" },
-        { "text": "Work on the one task.",               "mode": "auto", "seconds": 1500 },
-        { "text": "Break. Stand, breathe, look far.",    "mode": "auto", "seconds": 300 },
-        { "text": "Continue.",                           "mode": "auto", "seconds": 900 },
-        { "text": "Note what you completed.",            "mode": "tap" }
+        { "text": "Choose one task. Write it down.",             "mode": "tap",                  "cue": "Write the one outcome that matters today." },
+        { "text": "Phone in another room.",                      "mode": "tap",                  "cue": "Out of sight. Out of mind." },
+        { "text": "Work on the one task. 25 minutes.",           "mode": "auto", "seconds": 1500, "cue": "Only this. Nothing else." },
+        { "text": "Break. Stand, breathe, look far. 5 minutes.", "mode": "auto", "seconds": 300,  "cue": "Eyes to the horizon. Stretch." },
+        { "text": "Continue. 15 minutes.",                       "mode": "auto", "seconds": 900,  "cue": "Return to the same task." },
+        { "text": "Note what you completed.",                    "mode": "tap",                  "cue": "Write it down. It counts." }
       ]
     },
     "S": {
@@ -125,13 +125,13 @@
       "durationMin": 20,
       "tierLabel": "Secondary",
       "focus": "Attention",
-      "mantra": "Slow reading beats fast",
-      "cues": ["Slow reading beats fast"],
+      "mantra": "Slow reading beats fast.",
+      "cues": ["No phone"],
       "steps": [
-        { "text": "Choose one text.",        "mode": "tap" },
-        { "text": "Read with a pen.",        "mode": "auto", "seconds": 900 },
-        { "text": "Write three sentences.",  "mode": "tap" },
-        { "text": "Close the book.",         "mode": "tap" }
+        { "text": "Choose one text.",                            "mode": "tap",                 "cue": "Physical book or long-form article." },
+        { "text": "Read with a pen. 15 minutes.",                "mode": "auto", "seconds": 900, "cue": "Underline. Mark questions." },
+        { "text": "Write three sentences.",                      "mode": "tap",                 "cue": "What did you learn? In your own words." },
+        { "text": "Close the book.",                             "mode": "tap",                 "cue": "Let it settle." }
       ]
     },
     "M": {
@@ -139,12 +139,12 @@
       "durationMin": 5,
       "tierLabel": "Micro",
       "focus": "Attention",
-      "mantra": "Even four minutes counts",
-      "cues": ["Even four minutes counts"],
+      "mantra": "Even four minutes counts.",
+      "cues": ["One thing at a time"],
       "steps": [
-        { "text": "Close all tabs except one.",   "mode": "tap" },
-        { "text": "Work on the one thing.",       "mode": "auto", "seconds": 240 },
-        { "text": "Continue or stop.",            "mode": "tap" }
+        { "text": "Close all tabs except one.",                  "mode": "tap",                 "cue": "Strip the surface." },
+        { "text": "Work on the one thing. 4 minutes.",           "mode": "auto", "seconds": 240, "cue": "Even four minutes counts." },
+        { "text": "Continue or stop.",                           "mode": "tap",                 "cue": "Your call. No guilt either way." }
       ]
     }
   },
@@ -154,14 +154,14 @@
       "durationMin": 20,
       "tierLabel": "Primary",
       "focus": "Regulation",
-      "mantra": "Return is the practice",
-      "cues": ["Wandering is the practice", "Return is the practice"],
+      "mantra": "Return is the practice.",
+      "cues": ["Wandering is the practice"],
       "steps": [
-        { "text": "Sit comfortably.",            "mode": "auto", "seconds": 30 },
-        { "text": "Close eyes. Breathe.",        "mode": "auto", "seconds": 120 },
-        { "text": "Attention to the breath.",    "mode": "auto", "seconds": 900 },
-        { "text": "Mind wanders, return.",       "mode": "auto", "seconds": 60 },
-        { "text": "Open eyes slowly.",           "mode": "auto", "seconds": 60 }
+        { "text": "Sit comfortably.",                            "mode": "auto", "seconds": 30,  "cue": "Upright but relaxed." },
+        { "text": "Close eyes. Breathe. 2 minutes.",             "mode": "auto", "seconds": 120, "cue": "Settle in." },
+        { "text": "Attention to the breath. 15 minutes.",        "mode": "auto", "seconds": 900, "cue": "Notice where you feel it most." },
+        { "text": "Mind wanders. Return.",                       "mode": "auto", "seconds": 60,  "cue": "Wandering is the practice. Return is the practice." },
+        { "text": "Open eyes slowly.",                           "mode": "auto", "seconds": 60,  "cue": "Softly. Don't rush." }
       ]
     },
     "S": {
@@ -169,14 +169,14 @@
       "durationMin": 10,
       "tierLabel": "Secondary",
       "focus": "Reflection",
-      "mantra": "Write faster than you think",
-      "cues": ["No editing", "Write faster than you think"],
+      "mantra": "Write faster than you think.",
+      "cues": ["No editing"],
       "steps": [
-        { "text": "Paper and pen.",            "mode": "tap" },
-        { "text": "What worked today.",        "mode": "auto", "seconds": 120 },
-        { "text": "What felt hard.",           "mode": "auto", "seconds": 120 },
-        { "text": "What you want tomorrow.",   "mode": "auto", "seconds": 120 },
-        { "text": "Close the journal.",        "mode": "auto", "seconds": 30 }
+        { "text": "Paper and pen.",                              "mode": "tap",                 "cue": "Handwritten. No screen." },
+        { "text": "What worked today. 2 minutes.",               "mode": "auto", "seconds": 120, "cue": "Even small wins." },
+        { "text": "What felt hard. 2 minutes.",                  "mode": "auto", "seconds": 120, "cue": "Name it. Don't explain it." },
+        { "text": "What you want tomorrow. 2 minutes.",          "mode": "auto", "seconds": 120, "cue": "One clear intention." },
+        { "text": "Close the journal.",                          "mode": "auto", "seconds": 30,  "cue": "The act of closing matters." }
       ]
     },
     "M": {
@@ -184,12 +184,12 @@
       "durationMin": 3,
       "tierLabel": "Micro",
       "focus": "Downshift",
-      "mantra": "The exhale does the work",
-      "cues": ["The exhale does the work"],
+      "mantra": "The exhale does the work.",
+      "cues": ["Lengthen the out-breath"],
       "steps": [
-        { "text": "Soft posture.",           "mode": "auto", "seconds": 20 },
-        { "text": "Inhale 4, exhale 6.",     "mode": "auto", "seconds": 120 },
-        { "text": "One quiet breath.",       "mode": "auto", "seconds": 10 }
+        { "text": "Soft posture.",                               "mode": "auto", "seconds": 20,  "cue": "Soften the shoulders. Settle in." },
+        { "text": "Inhale 4, exhale 6. 2 minutes.",              "mode": "auto", "seconds": 120, "cue": "The out-breath is the longer of the two." },
+        { "text": "One quiet breath.",                           "mode": "auto", "seconds": 10,  "cue": "Return, then rest." }
       ]
     }
   }

@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
+import { useUserStore } from '../../store/userStore'
 import { MONTHLY_CHALLENGE, WEEKLY_QUESTION } from '../../data/voices'
+
+const REPORT_EMAIL = 'admin@omnifit.app'
 
 interface VoiceRow {
   id: string
@@ -9,12 +12,31 @@ interface VoiceRow {
   content: string
   week_number: number
   created_at: string
+  // Denormalized attribution (populated on insert)
+  display_name: string | null
+  member_since: string | null
+}
+
+function firstName(full: string | null | undefined): string {
+  if (!full) return 'A member'
+  const trimmed = full.trim().split(/\s+/)[0]
+  return trimmed || 'A member'
+}
+
+function formatMemberSince(iso: string | null | undefined): string {
+  if (!iso) return ''
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return ''
+  return d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
 }
 
 export function VoicesTab() {
   const [rows, setRows] = useState<VoiceRow[]>([])
   const [input, setInput] = useState('')
   const [submitting, setSubmitting] = useState(false)
+
+  const userName = useUserStore((s) => s.name)
+  const memberSince = useUserStore((s) => s.memberSince)
 
   useEffect(() => {
     let cancelled = false
@@ -41,57 +63,59 @@ export function VoicesTab() {
     if (!content || submitting) return
     setSubmitting(true)
 
-    // Optimistic insert so the UI updates immediately
+    const { data: { session } } = await supabase.auth.getSession()
+    const uid = session?.user.id ?? null
+
     const optimistic: VoiceRow = {
       id: `local-${Date.now()}`,
-      user_id: null,
+      user_id: uid,
       type: 'weekly',
       content,
       week_number: WEEKLY_QUESTION.weekNumber,
       created_at: new Date().toISOString(),
+      display_name: userName || null,
+      member_since: memberSince ? `${memberSince}T00:00:00Z` : null,
     }
     setRows((r) => [optimistic, ...r])
     setInput('')
 
     try {
-      const { data: { session } } = await supabase.auth.getSession()
       await supabase.from('voices').insert({
-        user_id: session?.user.id ?? null,
+        user_id: uid,
         type: 'weekly',
         content,
         week_number: WEEKLY_QUESTION.weekNumber,
+        display_name: userName || null,
+        member_since: memberSince ? `${memberSince}T00:00:00Z` : null,
       })
     } catch {
-      /* leave the optimistic row — will reconcile on reload */
+      /* leave optimistic row — will reconcile on reload */
     } finally {
       setSubmitting(false)
     }
+  }
+
+  function reportVoice(row: VoiceRow) {
+    const reporterId = useUserStore.getState().userId ?? 'unknown'
+    const subject = encodeURIComponent('OMNIFIT — Voice report')
+    const body = encodeURIComponent(
+      `Reported message:\n\n"${row.content}"\n\n` +
+      `Voice id: ${row.id}\n` +
+      `Author user id: ${row.user_id ?? 'unknown'}\n` +
+      `Reporter user id: ${reporterId}\n` +
+      `Reported at: ${new Date().toISOString()}`
+    )
+    window.location.href = `mailto:${REPORT_EMAIL}?subject=${subject}&body=${body}`
   }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
       {/* Monthly challenge */}
       <section style={{ background: 'var(--rose)', borderRadius: '20px', padding: '18px' }}>
-        <div
-          style={{
-            fontSize: '10px',
-            fontWeight: 600,
-            letterSpacing: '0.14em',
-            textTransform: 'uppercase',
-            color: 'var(--ink2)',
-          }}
-        >
+        <div style={{ fontSize: '10px', fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--ink2)' }}>
           Monthly challenge
         </div>
-        <div
-          style={{
-            fontSize: '18px',
-            fontWeight: 600,
-            letterSpacing: '-0.01em',
-            color: 'var(--ink)',
-            marginTop: '6px',
-          }}
-        >
+        <div style={{ fontSize: '18px', fontWeight: 600, letterSpacing: '-0.01em', color: 'var(--ink)', marginTop: '6px' }}>
           {MONTHLY_CHALLENGE.title}
         </div>
         <p style={{ fontSize: '13px', lineHeight: 1.5, color: 'var(--ink)', margin: '6px 0 10px' }}>
@@ -104,27 +128,10 @@ export function VoicesTab() {
 
       {/* Weekly question */}
       <section style={{ background: 'var(--rose)', borderRadius: '20px', padding: '18px' }}>
-        <div
-          style={{
-            fontSize: '10px',
-            fontWeight: 600,
-            letterSpacing: '0.14em',
-            textTransform: 'uppercase',
-            color: 'var(--ink2)',
-          }}
-        >
+        <div style={{ fontSize: '10px', fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--ink2)' }}>
           This week's question
         </div>
-        <div
-          style={{
-            fontSize: '18px',
-            fontWeight: 600,
-            letterSpacing: '-0.01em',
-            color: 'var(--ink)',
-            marginTop: '6px',
-            lineHeight: 1.3,
-          }}
-        >
+        <div style={{ fontSize: '18px', fontWeight: 600, letterSpacing: '-0.01em', color: 'var(--ink)', marginTop: '6px', lineHeight: 1.3 }}>
           {WEEKLY_QUESTION.text}
         </div>
         <div style={{ fontSize: '11px', color: 'var(--ink2)', fontWeight: 600, marginTop: '10px' }}>
@@ -140,33 +147,59 @@ export function VoicesTab() {
           </div>
         ) : (
           <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {rows.map((r) => (
-              <li
-                key={r.id}
-                style={{
-                  background: 'var(--card)',
-                  border: '1px solid var(--line)',
-                  borderRadius: '14px',
-                  padding: '12px 14px',
-                }}
-              >
-                <p style={{ fontSize: '13px', lineHeight: 1.5, color: 'var(--ink)', margin: 0 }}>
-                  {r.content}
-                </p>
-                <div
+            {rows.map((r) => {
+              const since = formatMemberSince(r.member_since)
+              return (
+                <li
+                  key={r.id}
                   style={{
-                    fontSize: '10px',
-                    letterSpacing: '0.1em',
-                    textTransform: 'uppercase',
-                    color: 'var(--ink2)',
-                    fontWeight: 600,
-                    marginTop: '6px',
+                    position: 'relative',
+                    background: 'var(--card)',
+                    border: '1px solid var(--line)',
+                    borderRadius: '14px',
+                    padding: '12px 14px 28px',
                   }}
                 >
-                  — A member
-                </div>
-              </li>
-            ))}
+                  <p style={{ fontSize: '13px', lineHeight: 1.5, color: 'var(--ink)', margin: 0 }}>
+                    {r.content}
+                  </p>
+                  <div
+                    style={{
+                      fontSize: '10px',
+                      letterSpacing: '0.1em',
+                      textTransform: 'uppercase',
+                      color: 'var(--ink2)',
+                      fontWeight: 600,
+                      marginTop: '6px',
+                    }}
+                  >
+                    {firstName(r.display_name)}
+                    {since && ` · Member since ${since}`}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => reportVoice(r)}
+                    aria-label="Report voice"
+                    style={{
+                      position: 'absolute',
+                      right: '10px',
+                      bottom: '8px',
+                      background: 'none',
+                      border: 'none',
+                      fontSize: '10px',
+                      color: 'var(--ink2)',
+                      cursor: 'pointer',
+                      fontFamily: 'inherit',
+                      opacity: 0.6,
+                      letterSpacing: '0.04em',
+                      padding: '2px 4px',
+                    }}
+                  >
+                    Report
+                  </button>
+                </li>
+              )
+            })}
           </ul>
         )}
       </section>

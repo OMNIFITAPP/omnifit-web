@@ -15,6 +15,23 @@ export type PlanTier = 'monthly' | 'annual' | 'founding'
 
 const ALL_DIMS: Dimension[] = ['neuro', 'physical', 'cognitive', 'emotional']
 
+export type PrimaryFocus =
+  | 'longevity'
+  | 'fat_loss'
+  | 'strength'
+  | 'endurance'
+  | 'sport_performance'
+  | 'general_capability'
+
+export const PRIMARY_FOCUS_OPTIONS: Array<{ value: PrimaryFocus; label: string }> = [
+  { value: 'longevity',          label: 'Longevity'          },
+  { value: 'fat_loss',           label: 'Fat loss'           },
+  { value: 'strength',           label: 'Strength'           },
+  { value: 'endurance',          label: 'Endurance'          },
+  { value: 'sport_performance',  label: 'Sport performance'  },
+  { value: 'general_capability', label: 'General capability' },
+]
+
 interface UserState {
   // Identity
   userId: string | null
@@ -31,6 +48,8 @@ interface UserState {
   // Preferences
   followMode: boolean           // true = app-selected plan, false = manual
   activeDims: Dimension[]       // dims shown on Today; all 4 by default
+  completionSound: boolean      // bell at session end
+  primaryFocus: PrimaryFocus | null
 
   // Billing
   subscriptionStatus: SubscriptionStatus
@@ -59,6 +78,8 @@ interface UserActions {
   }) => void
   setFollowMode: (v: boolean) => void
   toggleActiveDim: (dim: Dimension) => void
+  setCompletionSound: (v: boolean) => void
+  setPrimaryFocus: (v: PrimaryFocus | null) => void
   reset: () => void
 }
 
@@ -75,6 +96,8 @@ const DEFAULT_STATE: UserState = {
 
   followMode: true,
   activeDims: [...ALL_DIMS],
+  completionSound: true,
+  primaryFocus: null,
 
   subscriptionStatus: 'trial',
   planTier: null,
@@ -114,6 +137,10 @@ export const useUserStore = create<UserState & UserActions>()(
         })),
 
       setFollowMode: (v) => set({ followMode: v }),
+
+      setCompletionSound: (v) => set({ completionSound: v }),
+
+      setPrimaryFocus: (v) => set({ primaryFocus: v }),
 
       toggleActiveDim: (dim) =>
         set((s) => {
