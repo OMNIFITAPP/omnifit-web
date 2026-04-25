@@ -1,5 +1,7 @@
+import { forwardRef, type CSSProperties } from 'react'
 import type { DimConfig, Tier } from '../../types'
 import { getSession } from '../../data/sessions'
+import { TimeOfDayIcon } from './TimeOfDayIcon'
 
 interface DimensionCardProps {
   dim: DimConfig
@@ -7,23 +9,35 @@ interface DimensionCardProps {
   checked: boolean
   dayComplete: boolean
   allowSwap?: boolean
+  /** When true, card is rendered at 0.5 opacity (e.g. Rest-state readiness). */
+  greyed?: boolean
+  /** Additional style applied to the root (used by drag layers). */
+  dragStyle?: CSSProperties
+  /** Drag handle listeners from dnd-kit — attached to the whole card. */
+  dragHandleProps?: Record<string, unknown>
+  isDragging?: boolean
   onOpenDetail: () => void
   onOpenSwap: () => void
   onToggleCheck: () => void
 }
 
-export function DimensionCard({
+export const DimensionCard = forwardRef<HTMLDivElement, DimensionCardProps>(function DimensionCard({
   dim,
   tier,
   checked,
   dayComplete,
   allowSwap = true,
+  greyed = false,
+  dragStyle,
+  dragHandleProps,
+  isDragging,
   onOpenDetail,
   onOpenSwap,
   onToggleCheck,
-}: DimensionCardProps) {
+}, ref) {
   const isRest = tier === 'R'
   const soft = checked || dayComplete
+  const baseOpacity = greyed ? 0.5 : soft ? 0.65 : 1
 
   const cardStyle: React.CSSProperties = {
     position: 'relative',
@@ -35,14 +49,18 @@ export function DimensionCard({
     alignItems: 'center',
     gap: '12px',
     cursor: isRest ? 'default' : 'pointer',
-    opacity: soft ? 0.65 : 1,
+    opacity: isDragging ? 0.95 : baseOpacity,
     overflow: 'hidden',
-    transition: 'opacity 0.2s ease',
+    transition: isDragging ? 'none' : 'opacity 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease',
+    transform: isDragging ? 'scale(1.02)' : undefined,
+    boxShadow: isDragging ? '0 8px 24px rgba(61, 40, 23, 0.18)' : undefined,
+    touchAction: isDragging ? 'none' : 'manipulation',
+    ...dragStyle,
   }
 
   if (isRest) {
     return (
-      <div style={cardStyle}>
+      <div ref={ref} style={cardStyle} {...(dragHandleProps ?? {})}>
         <span
           style={{
             position: 'absolute',
@@ -62,9 +80,12 @@ export function DimensionCard({
               letterSpacing: '0.14em',
               textTransform: 'uppercase',
               color: dim.color,
+              display: 'flex',
+              alignItems: 'center',
             }}
           >
-            {dim.label}
+            <TimeOfDayIcon dim={dim.key} />
+            <span style={{ marginLeft: '6px' }}>{dim.label}</span>
           </div>
           <div
             style={{
@@ -85,10 +106,12 @@ export function DimensionCard({
 
   return (
     <div
+      ref={ref}
       style={cardStyle}
       onClick={onOpenDetail}
       role="button"
       tabIndex={0}
+      {...(dragHandleProps ?? {})}
     >
       {/* Accent bar */}
       <span
@@ -111,9 +134,12 @@ export function DimensionCard({
             letterSpacing: '0.14em',
             textTransform: 'uppercase',
             color: dim.color,
+            display: 'flex',
+            alignItems: 'center',
           }}
         >
-          {dim.label}
+          <TimeOfDayIcon dim={dim.key} />
+          <span style={{ marginLeft: '6px' }}>{dim.label}</span>
         </div>
         <div
           style={{
@@ -192,4 +218,4 @@ export function DimensionCard({
       </button>
     </div>
   )
-}
+})

@@ -28,6 +28,8 @@ export function AppLayout() {
             flex: 1,
             overflowY: 'auto',
             overflowX: 'hidden',
+            WebkitOverflowScrolling: 'touch',
+            overscrollBehavior: 'contain',
             paddingBottom: '92px',  /* nav height clearance */
           }}
         >

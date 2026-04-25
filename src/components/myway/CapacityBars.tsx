@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { DIMS } from '../../data/dims'
 import { supabase } from '../../lib/supabase'
 import { useUserStore } from '../../store/userStore'
+import { CapacityInfoSheet, InfoIcon } from './CapacityInfoSheet'
 import type { Dimension } from '../../types'
 
 // MVP: static values. TODO(v2): replace with Supabase `capacity_scores` table
@@ -23,6 +24,8 @@ type FeltNotes = Partial<Record<Dimension, string>>
 export function CapacityBars({ activeDims }: CapacityBarsProps) {
   const visible = activeDims ? DIMS.filter((d) => activeDims.includes(d.key as Dimension)) : DIMS
   const [feltNotes, setFeltNotes] = useState<FeltNotes>({})
+  const [infoDim, setInfoDim] = useState<Dimension | null>(null)
+  const [pressedDim, setPressedDim] = useState<Dimension | null>(null)
 
   useEffect(() => {
     const userId = useUserStore.getState().userId
@@ -91,9 +94,35 @@ export function CapacityBars({ activeDims }: CapacityBarsProps) {
                     fontWeight: 600,
                     color: dim.color,
                     letterSpacing: '0.02em',
+                    display: 'flex',
+                    alignItems: 'center',
                   }}
                 >
                   {dim.label}
+                  <button
+                    type="button"
+                    aria-label={`About ${dim.label} capacity`}
+                    onClick={() => {
+                      setPressedDim(dim.key as Dimension)
+                      setTimeout(() => {
+                        setInfoDim(dim.key as Dimension)
+                        setPressedDim(null)
+                      }, 120)
+                    }}
+                    style={{
+                      marginLeft: '8px',
+                      background: 'none',
+                      border: 'none',
+                      padding: 0,
+                      cursor: 'pointer',
+                      color: 'var(--ink2)',
+                      opacity: pressedDim === dim.key ? 1 : 0.5,
+                      transition: 'opacity 0.15s ease',
+                      lineHeight: 0,
+                    }}
+                  >
+                    <InfoIcon />
+                  </button>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
                   <span
@@ -143,6 +172,7 @@ export function CapacityBars({ activeDims }: CapacityBarsProps) {
           )
         })}
       </div>
+      <CapacityInfoSheet open={!!infoDim} dim={infoDim} onClose={() => setInfoDim(null)} />
     </section>
   )
 }

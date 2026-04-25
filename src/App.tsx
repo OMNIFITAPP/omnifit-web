@@ -11,6 +11,7 @@ import { TodayScreen } from './screens/TodayScreen'
 import { MyWayScreen } from './screens/MyWayScreen'
 import { ClubScreen } from './screens/ClubScreen'
 import { DetailScreen } from './screens/DetailScreen'
+import { ArticleScreen } from './screens/ArticleScreen'
 import { useUserStore } from './store/userStore'
 import { supabase } from './lib/supabase'
 import { hasAccess } from './lib/trial'
@@ -172,6 +173,7 @@ export default function App() {
           <Route path="club" element={<ClubScreen />} />
         </Route>
         <Route path="session/:dim/:tier" element={<DetailScreen />} />
+        <Route path="article/:id" element={<ArticleScreen />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>

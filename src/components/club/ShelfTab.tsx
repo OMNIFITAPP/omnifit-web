@@ -1,24 +1,39 @@
 import { useState } from 'react'
-import { SHELF, type ShelfCategory } from '../../data/shelf'
-import { DIM_MAP } from '../../data/dims'
+import { useNavigate } from 'react-router-dom'
+import { shelfArticles, type ShelfDimension } from '../../content/shelf-articles'
 
-type Filter = 'all' | ShelfCategory
+type Filter = 'all' | ShelfDimension
 
 const FILTERS: Array<{ key: Filter; label: string }> = [
-  { key: 'all',         label: 'All'           },
-  { key: 'neuro',       label: 'Neurological'  },
-  { key: 'physical',    label: 'Physical'      },
-  { key: 'cognitive',   label: 'Cognitive'     },
-  { key: 'emotional',   label: 'Emotional'     },
-  { key: 'foundation',  label: 'Foundations'   },
+  { key: 'all',          label: 'All'           },
+  { key: 'neurological', label: 'Neurological'  },
+  { key: 'physical',     label: 'Physical'      },
+  { key: 'cognitive',    label: 'Cognitive'     },
+  { key: 'emotional',    label: 'Emotional'     },
+  { key: 'foundations',  label: 'Foundations'   },
 ]
 
-const FOUNDATION_COLOR = 'var(--ink2)'
-const FOUNDATION_LABEL = 'Foundations'
+const DIM_COLOR: Record<ShelfDimension, string> = {
+  neurological: 'var(--neurological)',
+  physical:     'var(--physical)',
+  cognitive:    'var(--cognitive)',
+  emotional:    'var(--emotional)',
+  foundations:  'var(--ink2)',
+}
+
+const DIM_LABEL: Record<ShelfDimension, string> = {
+  neurological: 'Neurological',
+  physical:     'Physical',
+  cognitive:    'Cognitive',
+  emotional:    'Emotional',
+  foundations:  'Foundations',
+}
 
 export function ShelfTab() {
   const [filter, setFilter] = useState<Filter>('all')
-  const filtered = filter === 'all' ? SHELF : SHELF.filter((a) => a.dim === filter)
+  const navigate = useNavigate()
+  const filtered =
+    filter === 'all' ? shelfArticles : shelfArticles.filter((a) => a.dimension === filter)
 
   return (
     <div>
@@ -61,7 +76,6 @@ export function ShelfTab() {
         })}
       </div>
 
-      {/* Article list */}
       {filtered.length === 0 ? (
         <p
           style={{
@@ -77,13 +91,13 @@ export function ShelfTab() {
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
           {filtered.map((a, i) => {
-            const isFoundation = a.dim === 'foundation'
-            const color = isFoundation ? FOUNDATION_COLOR : DIM_MAP[a.dim].color
-            const label = isFoundation ? FOUNDATION_LABEL : DIM_MAP[a.dim].label
+            const color = DIM_COLOR[a.dimension]
+            const label = DIM_LABEL[a.dimension]
             return (
               <button
                 key={a.id}
                 type="button"
+                onClick={() => navigate(`/article/${a.id}`)}
                 style={{
                   background: 'transparent',
                   border: 'none',
@@ -94,6 +108,7 @@ export function ShelfTab() {
                   gap: '14px',
                   cursor: 'pointer',
                   textAlign: 'left',
+                  fontFamily: 'inherit',
                 }}
               >
                 <span
@@ -138,7 +153,7 @@ export function ShelfTab() {
                     flexShrink: 0,
                   }}
                 >
-                  {a.readMin} min
+                  {a.readTime} min
                 </div>
               </button>
             )

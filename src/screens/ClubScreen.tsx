@@ -75,7 +75,6 @@ export function ClubScreen() {
           position: 'relative',
           background: 'var(--cream)',
           zIndex: 1,
-          minHeight: '200px',
         }}
       >
         {room === 'talk'    && <TalkTab />}

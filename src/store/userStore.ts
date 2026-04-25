@@ -50,6 +50,7 @@ interface UserState {
   activeDims: Dimension[]       // dims shown on Today; all 4 by default
   completionSound: boolean      // bell at session end
   primaryFocus: PrimaryFocus | null
+  orderPreference: Dimension[] | null  // user-defined Today card order
 
   // Billing
   subscriptionStatus: SubscriptionStatus
@@ -80,6 +81,7 @@ interface UserActions {
   toggleActiveDim: (dim: Dimension) => void
   setCompletionSound: (v: boolean) => void
   setPrimaryFocus: (v: PrimaryFocus | null) => void
+  setOrderPreference: (order: Dimension[]) => void
   reset: () => void
 }
 
@@ -98,6 +100,7 @@ const DEFAULT_STATE: UserState = {
   activeDims: [...ALL_DIMS],
   completionSound: true,
   primaryFocus: null,
+  orderPreference: null,
 
   subscriptionStatus: 'trial',
   planTier: null,
@@ -141,6 +144,8 @@ export const useUserStore = create<UserState & UserActions>()(
       setCompletionSound: (v) => set({ completionSound: v }),
 
       setPrimaryFocus: (v) => set({ primaryFocus: v }),
+
+      setOrderPreference: (order) => set({ orderPreference: order }),
 
       toggleActiveDim: (dim) =>
         set((s) => {
