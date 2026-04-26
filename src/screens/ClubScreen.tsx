@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { useState } from 'react'
 import { TalkTab } from '../components/club/TalkTab'
 import { ShelfTab } from '../components/club/ShelfTab'
 import { CirclesTab } from '../components/club/CirclesTab'
@@ -14,31 +14,10 @@ const ROOMS: Array<{ key: RoomKey; label: string }> = [
 ]
 
 /**
- * Each pane is its own scroll region, kept mounted with display:none on
- * inactive panes. Opaque cream background prevents bleed-through during the
- * tab switch — no transitions on the active/inactive state change.
+ * NUCLEAR tab switching: only the active pane is mounted at any time. The
+ * inactive panes literally do not exist in the DOM, so they cannot bleed
+ * through, no matter what z-index, opacity, or overflow rules apply.
  */
-function Pane({ active, children }: { active: boolean; children: ReactNode }) {
-  return (
-    <div
-      style={{
-        display: active ? 'block' : 'none',
-        position: 'relative',
-        zIndex: active ? 1 : 0,
-        background: 'var(--cream)',
-        height: '100%',
-        maxHeight: 'calc(100vh - 180px)',
-        overflowY: 'auto',
-        WebkitOverflowScrolling: 'touch',
-        overscrollBehavior: 'contain',
-      }}
-      className="no-scrollbar"
-    >
-      {children}
-    </div>
-  )
-}
-
 export function ClubScreen() {
   const [room, setRoom] = useState<RoomKey>('talk')
 
@@ -96,10 +75,23 @@ export function ClubScreen() {
         })}
       </div>
 
-      <Pane active={room === 'talk'}><TalkTab /></Pane>
-      <Pane active={room === 'voices'}><VoicesTab /></Pane>
-      <Pane active={room === 'circles'}><CirclesTab /></Pane>
-      <Pane active={room === 'shelf'}><ShelfTab /></Pane>
+      <div
+        style={{
+          background: 'var(--cream)',
+          width: '100%',
+          height: '100%',
+          maxHeight: 'calc(100vh - 180px)',
+          overflowY: 'auto',
+          WebkitOverflowScrolling: 'touch',
+          overscrollBehavior: 'contain',
+        }}
+        className="no-scrollbar"
+      >
+        {room === 'talk'    && <TalkTab />}
+        {room === 'voices'  && <VoicesTab />}
+        {room === 'circles' && <CirclesTab />}
+        {room === 'shelf'   && <ShelfTab />}
+      </div>
     </div>
   )
 }

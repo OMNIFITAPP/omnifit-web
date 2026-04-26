@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { Component, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useUserStore } from '../../store/userStore'
@@ -43,7 +43,7 @@ function buildMonthGrid(anchor: Date): Date[] {
   })
 }
 
-export function MonthlyCalendar({ open, onClose }: Props) {
+function MonthlyCalendarInner({ open, onClose }: Props) {
   const navigate = useNavigate()
   const userId = useUserStore((s) => s.userId)
   const focusDim = useUserStore((s) => s.focusDim)
@@ -59,24 +59,43 @@ export function MonthlyCalendar({ open, onClose }: Props) {
     useState<Record<string, Array<{ tier: Tier; dimension: string }>>>({})
   const [dayPickedISO, setDayPickedISO] = useState<string | null>(null)
   const [planISO, setPlanISO] = useState<string | null>(null)
+  const [fetchError, setFetchError] = useState<string | null>(null)
 
   const grid = useMemo(() => buildMonthGrid(anchor), [anchor])
   const todayISO = isoDate(new Date())
 
   useEffect(() => {
-    if (!open || !userId) return
+    if (open) console.log('[MonthlyCalendar] mounted', { userId, anchor: anchor.toISOString() })
+  }, [open, userId, anchor])
+
+  useEffect(() => {
+    if (!open) return
+    setFetchError(null)
+    if (!userId) {
+      console.error('[MonthlyCalendar] No userId; rendering empty grid.')
+      return
+    }
     let cancelled = false
     const monthStart = new Date(anchor.getFullYear(), anchor.getMonth(), 1)
     const monthEnd = new Date(anchor.getFullYear(), anchor.getMonth() + 1, 1)
     ;(async () => {
       try {
-        const { data } = await supabase
+        const { data, error } = await supabase
           .from('session_completions')
           .select('completed_at, tier, dimension')
           .eq('user_id', userId)
           .gte('completed_at', monthStart.toISOString())
           .lt('completed_at', monthEnd.toISOString())
-        if (cancelled || !data) return
+        if (cancelled) return
+        if (error) {
+          console.error('[MonthlyCalendar] session_completions query error:', error)
+          setFetchError(error.message ?? 'Calendar unavailable.')
+          return
+        }
+        if (!data) {
+          setCompletionsByDate({})
+          return
+        }
         const map: Record<string, Array<{ tier: Tier; dimension: string }>> = {}
         for (const row of data as Array<{ completed_at: string; tier: Tier; dimension: string }>) {
           const d = new Date(row.completed_at)
@@ -85,8 +104,9 @@ export function MonthlyCalendar({ open, onClose }: Props) {
           map[key].push({ tier: row.tier, dimension: row.dimension })
         }
         setCompletionsByDate(map)
-      } catch {
-        /* offline */
+      } catch (err) {
+        console.error('[MonthlyCalendar] unhandled fetch error:', err)
+        if (!cancelled) setFetchError('Calendar unavailable.')
       }
     })()
     return () => { cancelled = true }
@@ -222,6 +242,37 @@ export function MonthlyCalendar({ open, onClose }: Props) {
     return plan as never
   }, [dayPickedISO, weekOverrides, completionsByDate, focusDim, activeDims])
 
+  // Bulletproof close button — always rendered first, never blocked by content.
+  const closeButton = (
+    <button
+      type="button"
+      aria-label="Close calendar"
+      onClick={onClose}
+      style={{
+        position: 'fixed',
+        top: '16px',
+        right: '16px',
+        zIndex: 999,
+        width: '40px',
+        height: '40px',
+        borderRadius: '50%',
+        background: 'var(--card)',
+        border: '1px solid var(--line)',
+        color: 'var(--ink)',
+        fontSize: '18px',
+        lineHeight: 1,
+        cursor: 'pointer',
+        fontFamily: 'inherit',
+        boxShadow: '0 2px 8px rgba(61, 40, 23, 0.12)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      ✕
+    </button>
+  )
+
   return (
     <div
       role="dialog"
@@ -229,14 +280,37 @@ export function MonthlyCalendar({ open, onClose }: Props) {
       style={{
         position: 'fixed',
         inset: 0,
+        height: '100vh',
         background: 'var(--cream)',
         zIndex: 250,
         maxWidth: '430px',
         marginInline: 'auto',
         display: 'flex',
         flexDirection: 'column',
+        boxSizing: 'border-box',
       }}
     >
+      {closeButton}
+
+      {fetchError && (
+        <div
+          style={{
+            margin: '12px 16px 0',
+            padding: '12px 14px',
+            background: 'var(--rose)',
+            borderRadius: '12px',
+            fontSize: '13px',
+            color: 'var(--ink)',
+            lineHeight: 1.5,
+          }}
+        >
+          Calendar unavailable. Tap ✕ to return.
+          <div style={{ fontSize: '11px', color: 'var(--ink2)', marginTop: '4px' }}>
+            {fetchError}
+          </div>
+        </div>
+      )}
+
       {/* Top bar */}
       <div
         style={{
@@ -292,22 +366,8 @@ export function MonthlyCalendar({ open, onClose }: Props) {
             ›
           </button>
         </div>
-        <button
-          type="button"
-          aria-label="Close calendar"
-          onClick={onClose}
-          style={{
-            background: 'none',
-            border: 'none',
-            color: 'var(--ink2)',
-            fontSize: '22px',
-            lineHeight: 1,
-            cursor: 'pointer',
-            padding: '4px 8px',
-          }}
-        >
-          ✕
-        </button>
+        {/* In-bar ✕ removed — superseded by always-visible fixed close button (z-index 999). */}
+        <span style={{ width: '40px' }} aria-hidden />
       </div>
 
       {/* Body */}
@@ -396,3 +456,82 @@ export function MonthlyCalendar({ open, onClose }: Props) {
     </div>
   )
 }
+
+/**
+ * Render-time safety net — if anything inside the calendar throws, the user
+ * still sees a fixed ✕ in the top-right and a friendly message instead of a
+ * blank screen.
+ */
+class CalendarBoundary extends Component<
+  { onClose: () => void; children: ReactNode },
+  { error: Error | null }
+> {
+  state = { error: null as Error | null }
+  static getDerivedStateFromError(error: Error) { return { error } }
+  componentDidCatch(error: Error, info: unknown) {
+    console.error('[MonthlyCalendar] render crash:', error, info)
+  }
+  render() {
+    if (!this.state.error) return this.props.children
+    return (
+      <div
+        role="dialog"
+        aria-modal="true"
+        style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'var(--cream)',
+          zIndex: 250,
+          maxWidth: '430px',
+          marginInline: 'auto',
+          padding: '80px 24px 24px',
+        }}
+      >
+        <button
+          type="button"
+          aria-label="Close calendar"
+          onClick={this.props.onClose}
+          style={{
+            position: 'fixed',
+            top: '16px',
+            right: '16px',
+            zIndex: 999,
+            width: '40px',
+            height: '40px',
+            borderRadius: '50%',
+            background: 'var(--card)',
+            border: '1px solid var(--line)',
+            color: 'var(--ink)',
+            fontSize: '18px',
+            lineHeight: 1,
+            cursor: 'pointer',
+            fontFamily: 'inherit',
+            boxShadow: '0 2px 8px rgba(61, 40, 23, 0.12)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          ✕
+        </button>
+        <p style={{ fontSize: '15px', color: 'var(--ink)', lineHeight: 1.5 }}>
+          Calendar unavailable. Tap ✕ to return.
+        </p>
+        <p style={{ fontSize: '11px', color: 'var(--ink2)', marginTop: '8px' }}>
+          {this.state.error.message}
+        </p>
+      </div>
+    )
+  }
+}
+
+/** Public wrapper — handles the open gate and provides the error boundary. */
+export function MonthlyCalendar(props: Props) {
+  if (!props.open) return null
+  return (
+    <CalendarBoundary onClose={props.onClose}>
+      <MonthlyCalendarInner {...props} />
+    </CalendarBoundary>
+  )
+}
+

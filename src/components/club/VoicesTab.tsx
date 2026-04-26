@@ -74,6 +74,7 @@ export function VoicesTab() {
   const [loading, setLoading] = useState(true)
   const [draft, setDraft] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [debugError, setDebugError] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -89,6 +90,10 @@ export function VoicesTab() {
           .select('*')
           .eq('month_start', monthStart)
           .maybeSingle()
+        if (ch.error) {
+          console.error('[Voices] monthly_challenges error:', ch.error)
+          setDebugError(`monthly_challenges: ${ch.error.message}`)
+        }
         if (!cancelled && ch.data) setChallenge(ch.data as MonthlyChallenge)
 
         // Weekly question
@@ -98,7 +103,15 @@ export function VoicesTab() {
           .eq('week_start', weekStart)
           .maybeSingle()
         if (cancelled) return
+        if (q.error) {
+          console.error('[Voices] weekly_questions error:', q.error)
+          setDebugError((prev) => prev ?? `weekly_questions: ${q.error?.message ?? 'unknown'}`)
+          setQuestionMissing(true)
+          setLoading(false)
+          return
+        }
         if (!q.data) {
+          console.warn('[Voices] no weekly_question for', weekStart)
           setQuestionMissing(true)
           setLoading(false)
           return
@@ -113,6 +126,10 @@ export function VoicesTab() {
           .eq('question_id', qRow.id)
           .order('created_at', { ascending: false })
         if (cancelled) return
+        if (v.error) {
+          console.error('[Voices] voices select error:', v.error)
+          setDebugError((prev) => prev ?? `voices: ${v.error?.message ?? 'unknown'}`)
+        }
         const rows = (v.data ?? []) as VoiceRow[]
         setVoices(rows)
 
@@ -160,8 +177,9 @@ export function VoicesTab() {
             )
           }
         }
-      } catch {
-        /* offline / not migrated yet */
+      } catch (err) {
+        console.error('[Voices] unhandled fetch error:', err)
+        setDebugError(err instanceof Error ? err.message : String(err))
       } finally {
         if (!cancelled) setLoading(false)
       }
@@ -251,6 +269,25 @@ export function VoicesTab() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+      {/* Debug strip — visible only when a query failed (RLS / missing migration) */}
+      {debugError && (
+        <div
+          style={{
+            background: 'color-mix(in oklab, var(--rose) 60%, transparent)',
+            borderRadius: '12px',
+            padding: '10px 12px',
+            fontSize: '11px',
+            color: 'var(--ink2)',
+            lineHeight: 1.5,
+          }}
+        >
+          <strong style={{ color: 'var(--ink)' }}>Voices debug:</strong> {debugError}
+          <div style={{ marginTop: '4px', fontStyle: 'italic' }}>
+            Likely cause — migration 0005 not applied, or RLS read policy missing.
+          </div>
+        </div>
+      )}
+
       {/* Monthly challenge */}
       {challenge && (
         <section style={{ background: 'var(--rose)', borderRadius: '20px', padding: '18px' }}>
@@ -335,18 +372,21 @@ export function VoicesTab() {
         )}
       </section>
 
-      {/* Add your voice */}
-      {question && !questionMissing && (
-        <section>
-          <div style={{ position: 'relative' }}>
-            <textarea
-              value={draft}
-              onChange={(e) => setDraft(e.target.value.slice(0, MAX_LEN))}
-              placeholder="Add your voice when you have one. Not before."
-              rows={3}
-              maxLength={MAX_LEN}
-              disabled={submitting}
-              className="voice-textarea"
+      {/* Add your voice — always rendered. Disabled when no question is live. */}
+      <section>
+        <div style={{ position: 'relative' }}>
+          <textarea
+            value={draft}
+            onChange={(e) => setDraft(e.target.value.slice(0, MAX_LEN))}
+            placeholder={
+              question && !questionMissing
+                ? 'Add your voice when you have one. Not before.'
+                : 'Check back when the question arrives.'
+            }
+            rows={3}
+            maxLength={MAX_LEN}
+            disabled={submitting || !question || questionMissing}
+            className="voice-textarea"
               style={{
                 width: '100%',
                 resize: 'none',
@@ -396,15 +436,18 @@ export function VoicesTab() {
               Post
             </button>
           </div>
-          <style>{`
-            .voice-textarea::placeholder {
-              color: var(--ink2);
-              opacity: 0.5;
-              font-style: italic;
-            }
-          `}</style>
-        </section>
-      )}
+        <style>{`
+          .voice-textarea::placeholder {
+            color: var(--ink2);
+            opacity: 0.5;
+            font-style: italic;
+          }
+          .voice-textarea:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+          }
+        `}</style>
+      </section>
 
       {/* Voices list */}
       {!questionMissing && (

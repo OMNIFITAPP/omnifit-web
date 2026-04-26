@@ -70,11 +70,13 @@ export function ReadinessCheckinFlow({ open, onClose }: Props) {
       style={{
         position: 'fixed',
         inset: 0,
+        height: '100vh',
         background: 'var(--cream)',
         zIndex: 300,
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
+        boxSizing: 'border-box',
       }}
     >
       {result ? (
@@ -215,14 +217,26 @@ function ResultView({ result, onClose }: { result: Checkin; onClose: () => void 
     <div
       style={{
         flex: 1,
+        minHeight: 0,
         display: 'flex',
         flexDirection: 'column',
-        justifyContent: 'space-between',
-        padding: '24px 20px 28px',
+        boxSizing: 'border-box',
+        padding: '20px 20px 0',
       }}
     >
-      <div style={{ height: '24px' }} />
-      <div style={{ textAlign: 'center', padding: '0 8px' }}>
+      {/* Centered content fills the available space */}
+      <div
+        style={{
+          flex: 1,
+          minHeight: 0,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          textAlign: 'center',
+          padding: '0 8px',
+        }}
+      >
         <div
           style={{
             fontSize: '10px',
@@ -230,7 +244,7 @@ function ResultView({ result, onClose }: { result: Checkin; onClose: () => void 
             textTransform: 'uppercase',
             color: 'var(--ink2)',
             fontWeight: 700,
-            marginBottom: '12px',
+            marginBottom: '10px',
           }}
         >
           Today reads
@@ -250,34 +264,42 @@ function ResultView({ result, onClose }: { result: Checkin; onClose: () => void 
           style={{
             fontSize: '15px',
             color: 'var(--ink)',
-            marginTop: '18px',
+            marginTop: '14px',
             lineHeight: 1.5,
             maxWidth: '320px',
-            marginInline: 'auto',
           }}
         >
           {coachingLine(result.state)}
         </p>
       </div>
 
-      <button
-        type="button"
-        onClick={onClose}
+      {/* Pinned button — never scrolls, accounts for iOS safe-area */}
+      <div
         style={{
-          width: '100%',
-          padding: '16px',
-          background: 'var(--ink)',
-          color: 'var(--cream)',
-          border: 'none',
-          borderRadius: '16px',
-          fontSize: '15px',
-          fontWeight: 600,
-          fontFamily: 'inherit',
-          cursor: 'pointer',
+          flexShrink: 0,
+          paddingTop: '12px',
+          paddingBottom: 'calc(20px + env(safe-area-inset-bottom, 0px))',
         }}
       >
-        Return to today
-      </button>
+        <button
+          type="button"
+          onClick={onClose}
+          style={{
+            width: '100%',
+            padding: '16px',
+            background: 'var(--ink)',
+            color: 'var(--cream)',
+            border: 'none',
+            borderRadius: '16px',
+            fontSize: '15px',
+            fontWeight: 600,
+            fontFamily: 'inherit',
+            cursor: 'pointer',
+          }}
+        >
+          Return to today
+        </button>
+      </div>
     </div>
   )
 }
