@@ -1,10 +1,9 @@
-import type { Dimension } from '../../types'
-
-// Outline-stroke ambient icons. Quiet by design — represent natural time of day
-// for each dimension (sunrise → sun → sunset → moon).
+// Outline-stroke ambient icons. Quiet by design — represent the natural time
+// of day for each card position (sunrise → sun → sunset → moon).
 
 interface Props {
-  dim: Dimension
+  /** Card slot 1..4, top to bottom. Each slot maps to a fixed time of day. */
+  position: number
   size?: number
 }
 
@@ -15,7 +14,7 @@ const COMMON: React.SVGProps<SVGSVGElement> = {
   strokeLinejoin: 'round',
 }
 
-export function TimeOfDayIcon({ dim, size = 14 }: Props) {
+export function TimeOfDayIcon({ position, size = 14 }: Props) {
   const baseStyle: React.CSSProperties = {
     color: 'var(--ink2)',
     opacity: 0.4,
@@ -34,8 +33,8 @@ export function TimeOfDayIcon({ dim, size = 14 }: Props) {
     'aria-hidden': true as const,
   }
 
-  switch (dim) {
-    case 'neuro':
+  switch (position) {
+    case 1:
       // Sunrise: half sun rising above horizon + short rays
       return (
         <svg {...common}>
@@ -46,7 +45,7 @@ export function TimeOfDayIcon({ dim, size = 14 }: Props) {
           <line x1="19" y1="12"  x2="17.5" y2="13.5" />
         </svg>
       )
-    case 'physical':
+    case 2:
       // Sun (midday): full circle with rays
       return (
         <svg {...common}>
@@ -61,8 +60,8 @@ export function TimeOfDayIcon({ dim, size = 14 }: Props) {
           <line x1="7"    y1="17"   x2="5.6"  y2="18.4" />
         </svg>
       )
-    case 'cognitive':
-      // Sunset: half sun setting behind horizon + down arrow feel (rays below)
+    case 3:
+      // Sunset: half sun setting + small down arrow above
       return (
         <svg {...common}>
           <line x1="3" y1="19" x2="21" y2="19" />
@@ -71,7 +70,8 @@ export function TimeOfDayIcon({ dim, size = 14 }: Props) {
           <polyline points="9.5,6 12,4 14.5,6" />
         </svg>
       )
-    case 'emotional':
+    case 4:
+    default:
       // Moon (evening): crescent
       return (
         <svg {...common}>

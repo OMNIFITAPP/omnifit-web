@@ -15,7 +15,8 @@ import { SwapSheet } from '../components/today/SwapSheet'
 import { DailyQuote } from '../components/today/DailyQuote'
 import { ReadinessCheckinCard } from '../components/today/ReadinessCheckinCard'
 import { ReadinessCheckinFlow } from '../components/today/ReadinessCheckinFlow'
-import { DaySheet } from '../components/myway/DaySheet'
+import { PlanTomorrowOverlay } from '../components/today/PlanTomorrowOverlay'
+import { useDailyNotesStore } from '../store/dailyNotesStore'
 import { computeTrial } from '../lib/trial'
 import type { DimConfig, Tier, Dimension, DailyPlan } from '../types'
 
@@ -59,9 +60,20 @@ export function TodayScreen() {
   const [checkinOpen, setCheckinOpen] = useState(false)
   const [tomorrowOpen, setTomorrowOpen] = useState(false)
 
+  // Daily notes — show "Note from yesterday" on Today (the note row whose
+  // date is today was authored last night during Plan Tomorrow).
+  const todayISO = new Date(
+    new Date().getFullYear(),
+    new Date().getMonth(),
+    new Date().getDate()
+  ).toISOString().split('T')[0]
+  const yesterdayNote = useDailyNotesStore((s) => s.notes[todayISO])
+  const loadNotes = useDailyNotesStore((s) => s.loadFor)
+
   useEffect(() => { ensureFreshDay() }, [ensureFreshDay])
   useEffect(() => { ensureFreshCheckin() }, [ensureFreshCheckin])
   useEffect(() => { loadCheckinFromServer() }, [loadCheckinFromServer])
+  useEffect(() => { loadNotes([todayISO]) }, [loadNotes, todayISO])
 
   const basePlan: DailyPlan = followMode
     ? followPlanFor(focusDim, activeDims)
@@ -95,7 +107,9 @@ export function TodayScreen() {
 
   // Tomorrow preview — same compute as Today's followPlan, one day ahead.
   const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1)
-  const tomorrowISO = tomorrow.toISOString().split('T')[0]
+  const tomorrowISO = new Date(
+    tomorrow.getFullYear(), tomorrow.getMonth(), tomorrow.getDate()
+  ).toISOString().split('T')[0]
   const tomorrowPlan = followPlanFor(focusDim, activeDims, tomorrow)
   const tomorrowSubtitle = planSubtitle(tomorrowPlan, activeDims, tomorrow)
   const weekOverride = useWeekStore((s) => s.plans[tomorrowISO])
@@ -175,6 +189,41 @@ export function TodayScreen() {
           onRecheck={() => setCheckinOpen(true)}
         />
       </div>
+
+      {/* Note from yesterday — quiet rose card, only when content is present */}
+      {yesterdayNote && yesterdayNote.trim().length > 0 && (
+        <div
+          style={{
+            background: 'color-mix(in oklab, var(--rose) 60%, transparent)',
+            borderRadius: '16px',
+            padding: '12px 16px',
+            marginBottom: '14px',
+          }}
+        >
+          <div
+            style={{
+              fontSize: '9px',
+              fontWeight: 700,
+              letterSpacing: '0.14em',
+              textTransform: 'uppercase',
+              color: 'var(--ink2)',
+            }}
+          >
+            Note from yesterday
+          </div>
+          <p
+            style={{
+              fontSize: '14px',
+              fontStyle: 'italic',
+              color: 'var(--ink)',
+              margin: '4px 0 0',
+              lineHeight: 1.5,
+            }}
+          >
+            {yesterdayNote}
+          </p>
+        </div>
+      )}
 
       {/* Follow / Choose toggle */}
       <div
@@ -269,15 +318,22 @@ export function TodayScreen() {
         onReorder={handleReorder}
       />
 
-      {/* Plan tomorrow preview (only when today is complete) */}
+      {/* Plan tomorrow card — tap anywhere to open full-screen overlay */}
       {dayComplete && (
-        <section
+        <button
+          type="button"
+          onClick={() => setTomorrowOpen(true)}
           style={{
+            width: '100%',
+            textAlign: 'left',
             marginTop: '14px',
             background: 'var(--card)',
             border: '1px solid var(--line)',
             borderRadius: '18px',
             padding: '14px 16px',
+            cursor: 'pointer',
+            fontFamily: 'inherit',
+            color: 'var(--ink)',
           }}
         >
           <div
@@ -302,24 +358,17 @@ export function TodayScreen() {
           >
             {tomorrowSubtitle}
           </div>
-          <button
-            type="button"
-            onClick={() => setTomorrowOpen(true)}
+          <div
             style={{
               marginTop: '8px',
-              background: 'none',
-              border: 'none',
-              color: 'var(--ink)',
               fontSize: '12px',
+              color: 'var(--ink)',
               fontWeight: 600,
-              padding: 0,
-              cursor: 'pointer',
-              fontFamily: 'inherit',
             }}
           >
             Plan tomorrow →
-          </button>
-        </section>
+          </div>
+        </button>
       )}
 
       <DailyQuote />
@@ -332,13 +381,11 @@ export function TodayScreen() {
         onClose={() => setSwapDim(null)}
       />
 
-      <DaySheet
+      <PlanTomorrowOverlay
         open={tomorrowOpen}
         onClose={() => setTomorrowOpen(false)}
         date={tomorrowISO}
-        label="Tomorrow"
         plan={effectiveTomorrowPlan}
-        readOnly={false}
         onChangeTier={(dim, tier) => setDayTier(tomorrowISO, dim, tier)}
       />
 

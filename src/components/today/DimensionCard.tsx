@@ -6,6 +6,8 @@ import { TimeOfDayIcon } from './TimeOfDayIcon'
 interface DimensionCardProps {
   dim: DimConfig
   tier: Tier
+  /** 1-based slot position (top of list = 1). Drives the time-of-day symbol. */
+  position: number
   checked: boolean
   dayComplete: boolean
   allowSwap?: boolean
@@ -24,6 +26,7 @@ interface DimensionCardProps {
 export const DimensionCard = forwardRef<HTMLDivElement, DimensionCardProps>(function DimensionCard({
   dim,
   tier,
+  position,
   checked,
   dayComplete,
   allowSwap = true,
@@ -84,7 +87,7 @@ export const DimensionCard = forwardRef<HTMLDivElement, DimensionCardProps>(func
               alignItems: 'center',
             }}
           >
-            <TimeOfDayIcon dim={dim.key} />
+            <TimeOfDayIcon position={position} />
             <span style={{ marginLeft: '6px' }}>{dim.label}</span>
           </div>
           <div
@@ -138,7 +141,7 @@ export const DimensionCard = forwardRef<HTMLDivElement, DimensionCardProps>(func
             alignItems: 'center',
           }}
         >
-          <TimeOfDayIcon dim={dim.key} />
+          <TimeOfDayIcon position={position} />
           <span style={{ marginLeft: '6px' }}>{dim.label}</span>
         </div>
         <div

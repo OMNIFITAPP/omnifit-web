@@ -49,7 +49,12 @@ export function shortCoaching(state: CheckinState): string {
 }
 
 function todayISO(): string {
-  return new Date().toISOString().split('T')[0]
+  // Use local date — UTC drifts by a day for negative-offset timezones at night.
+  const d = new Date()
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
 }
 
 interface CheckinState_ {
@@ -116,7 +121,10 @@ export const useReadinessCheckinStore = create<CheckinState_ & CheckinActions>()
             await supabase
               .from('readiness_checkins')
               .upsert(
-                { user_id: userId, date, sleep, body, mind, nourishment, composite, state },
+                {
+                  user_id: userId, date, sleep, body, mind, nourishment, composite, state,
+                  wearable_source: 'manual',
+                },
                 { onConflict: 'user_id,date' }
               )
           } catch {

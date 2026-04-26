@@ -15,8 +15,16 @@ export interface WeekDay {
   isFuture: boolean
 }
 
+/**
+ * Format a Date to yyyy-mm-dd using LOCAL date components.
+ * `toISOString()` shifts to UTC, which can return the wrong day near midnight
+ * for users in negative-offset timezones — that was the SUN→Sat wave bug.
+ */
 export function isoDate(d: Date): string {
-  return d.toISOString().split('T')[0]
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
 }
 
 /** Monday-anchored 7-day window containing the given date. */

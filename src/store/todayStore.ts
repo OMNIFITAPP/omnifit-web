@@ -38,7 +38,8 @@ export const useTodayStore = create<TodayState & TodayActions>()(
       planDate: '',
 
       initFromFocusDim: (focusDim) => {
-        const today = new Date().toISOString().split('T')[0]
+        const d = new Date()
+        const today = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
         const plan = Object.fromEntries(
           DIMS.map((d) => [d.key, d.key === focusDim ? ('P' as Tier) : ('M' as Tier)])
         ) as DailyPlan
@@ -52,7 +53,8 @@ export const useTodayStore = create<TodayState & TodayActions>()(
         set((s) => ({ checked: { ...s.checked, [dim]: !s.checked[dim] } })),
 
       ensureFreshDay: () => {
-        const today = new Date().toISOString().split('T')[0]
+        const d = new Date()
+        const today = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
         if (get().planDate !== today) {
           set({ checked: DEFAULT_CHECKED, planDate: today })
         }

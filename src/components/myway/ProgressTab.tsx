@@ -5,6 +5,7 @@ import { CapacityBars } from './CapacityBars'
 import { MonthlyStats } from './MonthlyStats'
 import { ReadinessSummary } from '../today/ReadinessSummary'
 import { ReadinessSheet } from './ReadinessSheet'
+import { MonthlyCalendar } from './MonthlyCalendar'
 import { useTodayStore } from '../../store/todayStore'
 import { useWeekStore } from '../../store/weekStore'
 import { useUserStore } from '../../store/userStore'
@@ -23,6 +24,7 @@ export function ProgressTab() {
 
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
   const [readinessOpen, setReadinessOpen] = useState(false)
+  const [calendarOpen, setCalendarOpen] = useState(false)
 
   const days: WaveDay[] = useMemo(() => {
     return currentWeek().map((d) => {
@@ -63,18 +65,28 @@ export function ProgressTab() {
           padding: '18px 16px 16px',
         }}
       >
-        <div
+        <button
+          type="button"
+          onClick={() => setCalendarOpen(true)}
           style={{
+            background: 'none',
+            border: 'none',
+            padding: 0,
+            margin: '0 0 12px',
             fontSize: '11px',
             fontWeight: 600,
             letterSpacing: '0.14em',
             textTransform: 'uppercase',
             color: 'var(--ink2)',
-            marginBottom: '12px',
+            cursor: 'pointer',
+            fontFamily: 'inherit',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
           }}
         >
-          This week
-        </div>
+          This week <span aria-hidden style={{ fontSize: '12px' }}>›</span>
+        </button>
         <WaveChart days={days} onSelectDay={setSelectedDate} />
         <p
           style={{
@@ -93,6 +105,7 @@ export function ProgressTab() {
 
       <ReadinessSummary scores={readiness} title="Readiness today" onTap={() => setReadinessOpen(true)} />
       <ReadinessSheet open={readinessOpen} onClose={() => setReadinessOpen(false)} />
+      <MonthlyCalendar open={calendarOpen} onClose={() => setCalendarOpen(false)} />
 
       <MonthlyStats />
 

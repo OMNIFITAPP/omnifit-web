@@ -33,6 +33,7 @@ interface Props {
 function SortableCard({
   dim,
   tier,
+  position,
   checked,
   dayComplete,
   allowSwap,
@@ -43,6 +44,7 @@ function SortableCard({
 }: {
   dim: DimConfig
   tier: Tier
+  position: number
   checked: boolean
   dayComplete: boolean
   allowSwap: boolean
@@ -71,6 +73,7 @@ function SortableCard({
       ref={setNodeRef}
       dim={dim}
       tier={tier}
+      position={position}
       checked={checked}
       dayComplete={dayComplete}
       allowSwap={allowSwap}
@@ -123,11 +126,12 @@ export function DimensionCardList({
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
       <SortableContext items={ids} strategy={verticalListSortingStrategy}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          {items.map((dim) => (
+          {items.map((dim, index) => (
             <SortableCard
               key={dim.key}
               dim={dim}
               tier={plan[dim.key as Dimension]}
+              position={index + 1}
               checked={checked[dim.key as Dimension]}
               dayComplete={dayComplete}
               allowSwap={allowSwap}
