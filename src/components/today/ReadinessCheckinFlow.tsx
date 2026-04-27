@@ -70,9 +70,13 @@ export function ReadinessCheckinFlow({ open, onClose }: Props) {
       style={{
         position: 'fixed',
         inset: 0,
-        height: '100vh',
+        width: '100%',
+        // 100dvh = dynamic viewport height; excludes iOS browser chrome.
+        height: '100dvh',
+        maxWidth: '430px',
+        margin: '0 auto',
         background: 'var(--cream)',
-        zIndex: 300,
+        zIndex: 500,
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
@@ -213,28 +217,21 @@ function QuestionView({
 }
 
 function ResultView({ result, onClose }: { result: Checkin; onClose: () => void }) {
+  // Three vertical regions per spec:
+  //   1. Top spacer — flex: 1 (auto-fills above content)
+  //   2. Center content — flex-shrink: 0 (state word + coaching)
+  //   3. Bottom button — flex-shrink: 0 with safe-area padding
   return (
-    <div
-      style={{
-        flex: 1,
-        minHeight: 0,
-        display: 'flex',
-        flexDirection: 'column',
-        boxSizing: 'border-box',
-        padding: '20px 20px 0',
-      }}
-    >
-      {/* Centered content fills the available space */}
+    <>
+      {/* 1. Top spacer */}
+      <div style={{ flex: 1 }} aria-hidden />
+
+      {/* 2. Center content */}
       <div
         style={{
-          flex: 1,
-          minHeight: 0,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
+          flexShrink: 0,
           textAlign: 'center',
-          padding: '0 8px',
+          padding: '0 28px',
         }}
       >
         <div
@@ -267,17 +264,18 @@ function ResultView({ result, onClose }: { result: Checkin; onClose: () => void 
             marginTop: '14px',
             lineHeight: 1.5,
             maxWidth: '320px',
+            marginInline: 'auto',
           }}
         >
           {coachingLine(result.state)}
         </p>
       </div>
 
-      {/* Pinned button — never scrolls, accounts for iOS safe-area */}
+      {/* 3. Bottom button */}
       <div
         style={{
           flexShrink: 0,
-          paddingTop: '12px',
+          padding: '24px 20px',
           paddingBottom: 'calc(20px + env(safe-area-inset-bottom, 0px))',
         }}
       >
@@ -300,6 +298,6 @@ function ResultView({ result, onClose }: { result: Checkin; onClose: () => void 
           Return to today
         </button>
       </div>
-    </div>
+    </>
   )
 }

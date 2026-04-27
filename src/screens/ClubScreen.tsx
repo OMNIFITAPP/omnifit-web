@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { TalkTab } from '../components/club/TalkTab'
 import { ShelfTab } from '../components/club/ShelfTab'
 import { CirclesTab } from '../components/club/CirclesTab'
@@ -20,6 +20,15 @@ const ROOMS: Array<{ key: RoomKey; label: string }> = [
  */
 export function ClubScreen() {
   const [room, setRoom] = useState<RoomKey>('talk')
+
+  // Reset the AppLayout outer scroll to the top whenever the user switches
+  // tabs — otherwise switching from a long pane to a short one leaves the
+  // viewport scrolled past the new pane's content.
+  useEffect(() => {
+    const scroller = document.querySelector<HTMLElement>('[data-app-scroll="true"]')
+    if (scroller) scroller.scrollTop = 0
+    else window.scrollTo(0, 0)
+  }, [room])
 
   return (
     <div style={{ padding: '16px 20px 12px' }}>
@@ -75,18 +84,8 @@ export function ClubScreen() {
         })}
       </div>
 
-      <div
-        style={{
-          background: 'var(--cream)',
-          width: '100%',
-          height: '100%',
-          maxHeight: 'calc(100vh - 180px)',
-          overflowY: 'auto',
-          WebkitOverflowScrolling: 'touch',
-          overscrollBehavior: 'contain',
-        }}
-        className="no-scrollbar"
-      >
+      {/* No inner scroll region — AppLayout's outer scroll owns the page. */}
+      <div style={{ width: '100%' }}>
         {room === 'talk'    && <TalkTab />}
         {room === 'voices'  && <VoicesTab />}
         {room === 'circles' && <CirclesTab />}

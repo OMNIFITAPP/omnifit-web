@@ -24,6 +24,7 @@ export function AppLayout() {
         {/* Scrollable screen content */}
         <div
           className="no-scrollbar"
+          data-app-scroll="true"
           style={{
             flex: 1,
             overflowY: 'auto',

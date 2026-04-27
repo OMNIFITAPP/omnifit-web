@@ -44,20 +44,28 @@ function formatMemberSince(iso: string | null | undefined): string {
   return d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
 }
 
-function startOfWeekISO(): string {
-  // Monday-anchored, matches PostgreSQL date_trunc('week', current_date)
-  const today = new Date()
-  const dow = (today.getDay() + 6) % 7
-  const monday = new Date(today)
-  monday.setDate(today.getDate() - dow)
-  return new Date(monday.getFullYear(), monday.getMonth(), monday.getDate())
-    .toISOString()
-    .split('T')[0]
+/**
+ * Monday-aligned ISO week start, per spec — matches Postgres
+ * date_trunc('week', current_date).
+ */
+function getMondayWeekStart(date: Date = new Date()): string {
+  const d = new Date(date)
+  const day = d.getDay()                  // 0=Sun, 1=Mon … 6=Sat
+  const diff = day === 0 ? -6 : 1 - day   // back up to Monday
+  d.setDate(d.getDate() + diff)
+  d.setHours(0, 0, 0, 0)
+  // Local-date components — toISOString would shift to UTC and drift the day.
+  const y  = d.getFullYear()
+  const m  = String(d.getMonth() + 1).padStart(2, '0')
+  const dd = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${dd}`
 }
 
-function startOfMonthISO(): string {
-  const today = new Date()
-  return new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0]
+/** First-of-month in LOCAL time (not UTC) — matches Postgres date_trunc('month'). */
+function getFirstOfMonth(date: Date = new Date()): string {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  return `${y}-${m}-01`
 }
 
 export function VoicesTab() {
@@ -78,8 +86,9 @@ export function VoicesTab() {
 
   useEffect(() => {
     let cancelled = false
-    const weekStart = startOfWeekISO()
-    const monthStart = startOfMonthISO()
+    const weekStart = getMondayWeekStart()
+    const monthStart = getFirstOfMonth()
+    console.log('[Voices] querying for weekStart=%s monthStart=%s', weekStart, monthStart)
     setLoading(true)
 
     ;(async () => {
