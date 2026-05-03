@@ -85,7 +85,7 @@ export function SavedTab() {
               {s.name}
             </div>
             <div style={{ fontSize: '12px', color: 'var(--ink2)', marginTop: '2px' }}>
-              {s.durationMin} min · {TIER_LABELS[tier]} · {s.focus}
+              {s.durationMin} min · {TIER_LABELS[tier]} · {s.category}
             </div>
           </button>
         )

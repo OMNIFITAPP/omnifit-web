@@ -166,7 +166,7 @@ export const DimensionCard = forwardRef<HTMLDivElement, DimensionCardProps>(func
           }}
         >
           <span>
-            {session.durationMin} min · {session.tierLabel}
+            {session.durationMin} min · {session.category}
           </span>
           {allowSwap && (
             <button

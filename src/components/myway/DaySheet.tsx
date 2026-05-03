@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { BottomSheet } from '../layout/BottomSheet'
 import { SwapSheet } from '../today/SwapSheet'
 import { DIMS } from '../../data/dims'
-import { getSession, TIER_LABELS } from '../../data/sessions'
+import { getSession } from '../../data/sessions'
 import type { DailyPlan, DimConfig, Tier, Dimension } from '../../types'
 
 interface DaySheetProps {
@@ -99,7 +99,7 @@ export function DaySheet({ open, onClose, date, label, plan, readOnly, onChangeT
                     {s ? s.name : 'Rest'}
                   </div>
                   <div style={{ fontSize: '12px', color: 'var(--ink2)', marginTop: '2px' }}>
-                    {s ? `${s.durationMin} min · ${TIER_LABELS[tier]}` : 'Recover'}
+                    {s ? `${s.durationMin} min · ${s.category}` : 'Recover'}
                   </div>
                 </div>
                 {!readOnly && (

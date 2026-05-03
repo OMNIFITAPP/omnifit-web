@@ -1,6 +1,7 @@
 import type { DimConfig, Tier } from '../../types'
 import { BottomSheet } from '../layout/BottomSheet'
-import { getSession, TIER_DESCRIPTIONS } from '../../data/sessions'
+import { getSession, getPool, TIER_DESCRIPTIONS } from '../../data/sessions'
+import { useDailyPickStore, effectivePickFor } from '../../store/dailyPickStore'
 
 interface SwapSheetProps {
   open: boolean
@@ -17,12 +18,29 @@ const OPTIONS: Array<{ tier: 'P' | 'S' | 'M'; label: string }> = [
 ]
 
 export function SwapSheet({ open, dim, currentTier, onSelect, onClose }: SwapSheetProps) {
+  // Subscribe so the active-marker updates after a manual pick.
+  useDailyPickStore((s) => s.manual)
+
   if (!dim) {
     return (
       <BottomSheet open={open} onClose={onClose}>
         <div />
       </BottomSheet>
     )
+  }
+
+  // Build alternative-session list for the active tier (skip if Rest).
+  const tierForAlts: 'P' | 'S' | 'M' | null =
+    currentTier === 'R' ? null : (currentTier as 'P' | 'S' | 'M')
+  const activeId = tierForAlts ? effectivePickFor(dim.key, tierForAlts) : null
+  const alternatives = tierForAlts
+    ? getPool(dim.key, tierForAlts).filter((s) => s.id !== activeId)
+    : []
+
+  function pickSession(sessionId: string) {
+    if (!tierForAlts) return
+    useDailyPickStore.getState().setManual(dim!.key, tierForAlts, sessionId)
+    onClose()
   }
 
   return (
@@ -124,6 +142,48 @@ export function SwapSheet({ open, dim, currentTier, onSelect, onClose }: SwapShe
         >
           Rest today — skip this dimension
         </button>
+
+        {/* Pool alternatives within the active tier */}
+        {alternatives.length > 0 && tierForAlts && (
+          <>
+            <div
+              style={{
+                marginTop: '14px',
+                fontSize: '10px',
+                fontWeight: 700,
+                letterSpacing: '0.14em',
+                textTransform: 'uppercase',
+                color: 'var(--ink2)',
+              }}
+            >
+              Other {OPTIONS.find((o) => o.tier === tierForAlts)?.label.toLowerCase()} sessions
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              {alternatives.map((s) => (
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => pickSession(s.id)}
+                  style={{
+                    textAlign: 'left',
+                    background: 'transparent',
+                    border: '1px solid var(--line)',
+                    borderRadius: '12px',
+                    padding: '10px 14px',
+                    cursor: 'pointer',
+                    fontFamily: 'inherit',
+                    color: 'var(--ink)',
+                  }}
+                >
+                  <div style={{ fontSize: '14px', fontWeight: 600 }}>{s.name}</div>
+                  <div style={{ fontSize: '11px', color: 'var(--ink2)', marginTop: '2px' }}>
+                    {s.durationMin} min · {s.category}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </>
+        )}
       </div>
     </BottomSheet>
   )

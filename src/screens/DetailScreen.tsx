@@ -247,7 +247,7 @@ function PracticeFlow({ dim, tier }: { dim: Dimension; tier: 'P' | 'S' | 'M' }) 
           {session.name}
         </h2>
         <div style={{ marginTop: '10px', fontSize: '13px', opacity: 0.9 }}>
-          {session.durationMin} min · {TIER_LABELS[tier]} · {session.focus}
+          {session.durationMin} min · {TIER_LABELS[tier]} · {session.category}
         </div>
         {feltSummary && isIntro && (
           <div style={{ marginTop: '6px', fontSize: '12px', opacity: 0.85, fontStyle: 'italic' }}>

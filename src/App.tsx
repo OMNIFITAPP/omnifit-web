@@ -13,6 +13,8 @@ import { ClubScreen } from './screens/ClubScreen'
 import { DetailScreen } from './screens/DetailScreen'
 import { ArticleScreen } from './screens/ArticleScreen'
 import { useUserStore } from './store/userStore'
+import { useDailyPickStore } from './store/dailyPickStore'
+import { getAllPools } from './data/sessions'
 import { supabase } from './lib/supabase'
 import { hasAccess } from './lib/trial'
 import type { Dimension } from './types'
@@ -55,6 +57,11 @@ function useGate() {
       email: user.email ?? '',
       emailVerified: !!user.email_confirmed_at,
     })
+
+    // Compute today's session picks (id-stable per user+date, biased away
+    // from anything completed in the last 3 days).
+    useDailyPickStore.getState().ensureFreshDay()
+    useDailyPickStore.getState().loadAndCompute(getAllPools())
 
     // Only pull profile once verified
     if (!user.email_confirmed_at) return

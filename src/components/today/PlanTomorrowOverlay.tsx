@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { DIMS, DIM_MAP } from '../../data/dims'
-import { getSession, TIER_LABELS } from '../../data/sessions'
+import { getSession } from '../../data/sessions'
 import { SwapSheet } from './SwapSheet'
 import { useDailyNotesStore } from '../../store/dailyNotesStore'
 import type { DailyPlan, DimConfig, Dimension, Tier } from '../../types'
@@ -189,7 +189,7 @@ export function PlanTomorrowOverlay({ open, onClose, date, plan, onChangeTier }:
                   </div>
                   <div style={{ fontSize: '12px', color: 'var(--ink2)', marginTop: '2px' }}>
                     {session
-                      ? `${session.durationMin} min · ${TIER_LABELS[tier]}`
+                      ? `${session.durationMin} min · ${session.category}`
                       : 'Recover'}
                   </div>
                 </div>

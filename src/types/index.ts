@@ -15,11 +15,13 @@ export interface SessionStep {
 }
 
 export interface Session {
+  id: string
   name: string
-  meta: string
+  durationMin: number
+  category: string
+  meta: string                  // "10 min · Mobility"
   mantra: string
   steps: SessionStep[]
-  cues: string[]
 }
 
 export type SessionsByTier = Record<'P' | 'S' | 'M', Session>
