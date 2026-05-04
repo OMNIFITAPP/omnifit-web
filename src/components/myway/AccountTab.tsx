@@ -1,4 +1,6 @@
+import { useEffect, useState } from 'react'
 import { useUserStore, PRIMARY_FOCUS_OPTIONS, type PrimaryFocus } from '../../store/userStore'
+import { useCommitmentsStore } from '../../store/commitmentsStore'
 import { DIMS, DIM_MAP } from '../../data/dims'
 import type { Dimension } from '../../types'
 import { playChime } from '../../lib/chime'
@@ -282,41 +284,135 @@ export function AccountTab() {
         </div>
       </section>
 
-      {/* Commitment */}
-      {commitWhy && (
-        <section
+      {/* Seasonal commitments — current at top, past collapsed */}
+      <CommitmentsList legacyWhy={commitWhy} />
+    </div>
+  )
+}
+
+function CommitmentsList({ legacyWhy }: { legacyWhy: string }) {
+  const commitments = useCommitmentsStore((s) => s.commitments)
+  const load = useCommitmentsStore((s) => s.load)
+  const [expanded, setExpanded] = useState<Set<string>>(new Set())
+  useEffect(() => { load() }, [load])
+
+  // No rows yet — fall back to legacy commit_why from profiles for continuity.
+  if (commitments.length === 0) {
+    if (!legacyWhy) return null
+    return (
+      <section style={{ background: 'var(--rose)', borderRadius: '20px', padding: '18px' }}>
+        <div
           style={{
-            background: 'var(--rose)',
-            borderRadius: '20px',
-            padding: '18px',
+            fontSize: '11px',
+            fontWeight: 600,
+            letterSpacing: '0.14em',
+            textTransform: 'uppercase',
+            color: 'var(--ink2)',
+            marginBottom: '6px',
           }}
         >
+          Commitment
+        </div>
+        <p style={{ fontSize: '15px', lineHeight: 1.5, color: 'var(--ink)', margin: 0 }}>
+          This matters to me because{' '}
+          <em style={{ fontStyle: 'italic', color: 'var(--ink)' }}>{legacyWhy}</em>
+        </p>
+      </section>
+    )
+  }
+
+  const [current, ...past] = commitments
+  const visiblePast = past.slice(0, 4)
+
+  return (
+    <section style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+      <div style={{ background: 'var(--rose)', borderRadius: '20px', padding: '18px' }}>
+        <div
+          style={{
+            fontSize: '11px',
+            fontWeight: 600,
+            letterSpacing: '0.14em',
+            textTransform: 'uppercase',
+            color: 'var(--ink2)',
+          }}
+        >
+          {current.season} {current.year}
+        </div>
+        <p
+          style={{
+            fontSize: '15px',
+            lineHeight: 1.55,
+            color: 'var(--ink)',
+            margin: '8px 0 0',
+          }}
+        >
+          This {current.season.toLowerCase()} matters to me because{' '}
+          <em style={{ fontStyle: 'italic' }}>{current.why ?? '—'}</em>
+        </p>
+        {current.focus_dimension && (
           <div
             style={{
               fontSize: '11px',
+              color: DIM_MAP[current.focus_dimension]?.color ?? 'var(--ink2)',
               fontWeight: 600,
-              letterSpacing: '0.14em',
-              textTransform: 'uppercase',
-              color: 'var(--ink2)',
-              marginBottom: '6px',
+              marginTop: '8px',
+              letterSpacing: '0.04em',
             }}
           >
-            Commitment
+            Focus: {DIM_MAP[current.focus_dimension]?.label ?? current.focus_dimension}
           </div>
-          <p
+        )}
+      </div>
+
+      {visiblePast.map((c) => {
+        const isOpen = expanded.has(c.id)
+        return (
+          <button
+            key={c.id}
+            type="button"
+            onClick={() =>
+              setExpanded((s) => {
+                const next = new Set(s)
+                if (next.has(c.id)) next.delete(c.id); else next.add(c.id)
+                return next
+              })
+            }
             style={{
-              fontSize: '15px',
-              lineHeight: 1.5,
+              textAlign: 'left',
+              background: 'var(--card)',
+              border: '1px solid var(--line)',
+              borderRadius: '14px',
+              padding: '12px 14px',
+              cursor: 'pointer',
+              fontFamily: 'inherit',
               color: 'var(--ink)',
-              margin: 0,
             }}
           >
-            This matters to me because{' '}
-            <em style={{ fontStyle: 'italic', color: 'var(--ink)' }}>{commitWhy}</em>
-          </p>
-        </section>
-      )}
-    </div>
+            <div
+              style={{
+                fontSize: '11px',
+                fontWeight: 600,
+                letterSpacing: '0.14em',
+                textTransform: 'uppercase',
+                color: 'var(--ink2)',
+              }}
+            >
+              {c.season} {c.year}
+            </div>
+            {isOpen && (
+              <p style={{ fontSize: '13px', lineHeight: 1.55, color: 'var(--ink)', margin: '6px 0 0' }}>
+                <em>{c.why ?? '—'}</em>
+                {c.focus_dimension && (
+                  <span style={{ display: 'block', marginTop: '4px', fontSize: '11px', color: 'var(--ink2)' }}>
+                    Focus: {DIM_MAP[c.focus_dimension]?.label ?? c.focus_dimension}
+                  </span>
+                )}
+              </p>
+            )}
+          </button>
+        )
+      })}
+    </section>
   )
 }
 

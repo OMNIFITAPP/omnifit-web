@@ -33,6 +33,10 @@ function todayISO(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
+function dateToISO(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
 /** Stable 32-bit hash of a string. */
 function hash32(s: string): number {
   let h = 2166136261
@@ -131,4 +135,46 @@ export function effectivePickFor(dim: Dimension, tier: Tier): string | null {
   const t = tier as 'P' | 'S' | 'M'
   const s = useDailyPickStore.getState()
   return s.manual[`${dim}:${t}`] ?? s.picks[`${dim}:${t}`] ?? null
+}
+
+/**
+ * Pure synchronous pick computation for any date — used by Plan Tomorrow,
+ * Wave day-tap, and Calendar day-tap so all three agree on a (date, dim, tier).
+ *
+ * Exclusion is best-effort from the cache of recent completions; for past
+ * dates it's slightly inaccurate but acceptable since past picks are read-only
+ * historical context.
+ */
+export function pickSessionsForDate(
+  date: Date,
+  pools: Record<Dimension, Record<'P' | 'S' | 'M', Array<{ id: string; name: string }>>>
+): Record<string, string> {
+  const userId = useUserStore.getState().userId ?? 'anon'
+  const iso = dateToISO(date)
+  const seedBase = `${userId}:${iso}`
+  const exclude = new Set(useDailyPickStore.getState().recentlyDoneNames)
+  const out: Record<string, string> = {}
+  for (const dim of Object.keys(pools) as Dimension[]) {
+    for (const tier of ['P', 'S', 'M'] as const) {
+      const pool = pools[dim][tier]
+      const seed = hash32(`${seedBase}:${dim}:${tier}`)
+      const chosen = seededPick(pool, exclude, seed)
+      if (chosen) out[`${dim}:${tier}`] = chosen.id
+    }
+  }
+  return out
+}
+
+/** Resolve picks for a specific date — falls back to today's store-cached picks
+ *  when the date matches today (so manual swaps still take effect). */
+export function picksForDate(
+  date: Date,
+  pools: Record<Dimension, Record<'P' | 'S' | 'M', Array<{ id: string; name: string }>>>
+): Record<string, string> {
+  const iso = dateToISO(date)
+  if (iso === todayISO()) {
+    const s = useDailyPickStore.getState()
+    return { ...s.picks, ...s.manual }
+  }
+  return pickSessionsForDate(date, pools)
 }

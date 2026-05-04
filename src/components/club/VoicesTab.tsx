@@ -88,16 +88,18 @@ export function VoicesTab() {
     let cancelled = false
     const weekStart = getMondayWeekStart()
     const monthStart = getFirstOfMonth()
-    console.log('[Voices] querying for weekStart=%s monthStart=%s', weekStart, monthStart)
+    console.log('[Voices] querying latest at-or-before weekStart=%s monthStart=%s', weekStart, monthStart)
     setLoading(true)
 
     ;(async () => {
       try {
-        // Monthly challenge
+        // Monthly challenge — latest at-or-before this month
         const ch = await supabase
           .from('monthly_challenges')
           .select('*')
-          .eq('month_start', monthStart)
+          .lte('month_start', monthStart)
+          .order('month_start', { ascending: false })
+          .limit(1)
           .maybeSingle()
         if (ch.error) {
           console.error('[Voices] monthly_challenges error:', ch.error)
@@ -105,11 +107,13 @@ export function VoicesTab() {
         }
         if (!cancelled && ch.data) setChallenge(ch.data as MonthlyChallenge)
 
-        // Weekly question
+        // Weekly question — latest at-or-before this Monday
         const q = await supabase
           .from('weekly_questions')
           .select('*')
-          .eq('week_start', weekStart)
+          .lte('week_start', weekStart)
+          .order('week_start', { ascending: false })
+          .limit(1)
           .maybeSingle()
         if (cancelled) return
         if (q.error) {

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { BottomSheet } from '../layout/BottomSheet'
 import { SwapSheet } from '../today/SwapSheet'
 import { DIMS } from '../../data/dims'
-import { getSession } from '../../data/sessions'
+import { getSessionForDate } from '../../data/sessions'
 import type { DailyPlan, DimConfig, Tier, Dimension } from '../../types'
 
 interface DaySheetProps {
@@ -43,7 +43,8 @@ export function DaySheet({ open, onClose, date, label, plan, readOnly, onChangeT
           {DIMS.map((dim) => {
             const tier = plan[dim.key] as Tier
             const isRest = tier === 'R'
-            const s = isRest ? null : getSession(dim.key, tier)
+            const targetDate = new Date(`${date}T00:00:00`)
+            const s = isRest ? null : getSessionForDate(targetDate, dim.key, tier as 'P' | 'S' | 'M')
             return (
               <button
                 key={dim.key}

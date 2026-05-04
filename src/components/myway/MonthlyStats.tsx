@@ -43,7 +43,7 @@ export function MonthlyStats() {
       </div>
       {!hasData ? (
         <p style={{ fontSize: '12px', color: 'var(--ink2)', fontStyle: 'italic', margin: 0 }}>
-          Complete your first session to begin tracking.
+          Complete your first session this month to begin tracking.
         </p>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>

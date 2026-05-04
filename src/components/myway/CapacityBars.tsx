@@ -5,14 +5,34 @@ import { useUserStore } from '../../store/userStore'
 import { CapacityInfoSheet, InfoIcon } from './CapacityInfoSheet'
 import type { Dimension } from '../../types'
 
-// MVP: static values. TODO(v2): replace with Supabase `capacity_scores` table
-// fetched per user — returns { dim, value, trend } rows computed from recent
-// check-ins, HRV, and completion rate.
-const CAPACITY: Record<Dimension, { value: number; trend: number }> = {
-  physical:  { value: 72, trend:  3 },
-  cognitive: { value: 68, trend:  1 },
-  emotional: { value: 64, trend: -2 },
-  neuro:     { value: 78, trend:  4 },
+const TIER_VALUE: Record<string, number> = { P: 0.5, S: 0.3, M: 0.1 }
+const DECAY_PER_DAY = 0.985
+const BASELINE = 40
+const WINDOW_DAYS = 28
+
+interface DimScore { value: number; trend: number }
+
+/** Score for a single dimension at a given "now" date. */
+function computeScore(
+  completions: Array<{ tier: string; completed_at: string }>,
+  now: Date
+): number {
+  const cutoff = new Date(now.getTime() - WINDOW_DAYS * 24 * 60 * 60 * 1000)
+  let score = BASELINE
+  let lastDate = cutoff
+  const usable = completions
+    .filter((c) => new Date(c.completed_at) >= cutoff && new Date(c.completed_at) <= now)
+    .sort((a, b) => +new Date(a.completed_at) - +new Date(b.completed_at))
+  for (const c of usable) {
+    const at = new Date(c.completed_at)
+    const days = (at.getTime() - lastDate.getTime()) / (24 * 60 * 60 * 1000)
+    score *= Math.pow(DECAY_PER_DAY, days)
+    score = Math.min(100, score + (TIER_VALUE[c.tier] ?? 0))
+    lastDate = at
+  }
+  const finalDays = (now.getTime() - lastDate.getTime()) / (24 * 60 * 60 * 1000)
+  score *= Math.pow(DECAY_PER_DAY, finalDays)
+  return Math.round(Math.max(0, score))
 }
 
 interface CapacityBarsProps {
@@ -26,6 +46,43 @@ export function CapacityBars({ activeDims }: CapacityBarsProps) {
   const [feltNotes, setFeltNotes] = useState<FeltNotes>({})
   const [infoDim, setInfoDim] = useState<Dimension | null>(null)
   const [pressedDim, setPressedDim] = useState<Dimension | null>(null)
+  const [scores, setScores] = useState<Record<Dimension, DimScore>>({
+    physical:  { value: BASELINE, trend: 0 },
+    cognitive: { value: BASELINE, trend: 0 },
+    emotional: { value: BASELINE, trend: 0 },
+    neuro:     { value: BASELINE, trend: 0 },
+  })
+
+  // Compute capacity scores from completions (current + 7-day-ago for trend)
+  useEffect(() => {
+    const userId = useUserStore.getState().userId
+    if (!userId) return
+    let cancelled = false
+    const now = new Date()
+    const since = new Date(now.getTime() - (WINDOW_DAYS + 7) * 24 * 60 * 60 * 1000).toISOString()
+    supabase
+      .from('session_completions')
+      .select('dimension, tier, completed_at')
+      .eq('user_id', userId)
+      .gte('completed_at', since)
+      .then(({ data }) => {
+        if (cancelled || !data) return
+        const byDim: Record<string, Array<{ tier: string; completed_at: string }>> = {}
+        for (const r of data as Array<{ dimension: string; tier: string; completed_at: string }>) {
+          ;(byDim[r.dimension] = byDim[r.dimension] ?? []).push({ tier: r.tier, completed_at: r.completed_at })
+        }
+        const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+        const next = {} as Record<Dimension, DimScore>
+        for (const dim of ['physical', 'cognitive', 'emotional', 'neuro'] as Dimension[]) {
+          const list = byDim[dim] ?? []
+          const cur = computeScore(list, now)
+          const prev = computeScore(list, sevenDaysAgo)
+          next[dim] = { value: cur, trend: cur - prev }
+        }
+        setScores(next)
+      })
+    return () => { cancelled = true }
+  }, [])
 
   useEffect(() => {
     const userId = useUserStore.getState().userId
@@ -74,7 +131,7 @@ export function CapacityBars({ activeDims }: CapacityBarsProps) {
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
         {visible.map((dim) => {
-          const c = CAPACITY[dim.key]
+          const c = scores[dim.key as Dimension]
           const up = c.trend > 0
           const flat = c.trend === 0
           const felt = feltNotes[dim.key as Dimension]

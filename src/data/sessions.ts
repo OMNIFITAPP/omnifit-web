@@ -1,6 +1,6 @@
 import sessionsJson from './sessions.json'
 import type { Dimension, Session, SessionStep, Tier } from '../types'
-import { useDailyPickStore, effectivePickFor } from '../store/dailyPickStore'
+import { useDailyPickStore, effectivePickFor, picksForDate } from '../store/dailyPickStore'
 
 // ─── Raw JSON shape ───────────────────────────────────────────────
 type JsonDim = 'neurological' | 'physical' | 'cognitive' | 'emotional'
@@ -113,6 +113,20 @@ export function getSession(dim: Dimension, tier: 'P' | 'S' | 'M'): Session {
   const pickedId = effectivePickFor(dim, tier)
   const fromPick = pickedId ? BY_ID[pickedId] : null
   return fromPick ?? POOLS[dim][tier][0]
+}
+
+/**
+ * Resolve the session for a (dim, tier) on any date. Today goes through the
+ * store (honours swaps); other dates use the deterministic seed.
+ */
+export function getSessionForDate(
+  date: Date,
+  dim: Dimension,
+  tier: 'P' | 'S' | 'M'
+): Session {
+  const picks = picksForDate(date, getAllPools())
+  const id = picks[`${dim}:${tier}`]
+  return (id && BY_ID[id]) || POOLS[dim][tier][0]
 }
 
 /** Short, one-line description for each tier — used in the swap sheet */

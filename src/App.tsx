@@ -14,6 +14,7 @@ import { DetailScreen } from './screens/DetailScreen'
 import { ArticleScreen } from './screens/ArticleScreen'
 import { useUserStore } from './store/userStore'
 import { useDailyPickStore } from './store/dailyPickStore'
+import { useNotesStore } from './store/notesStore'
 import { getAllPools } from './data/sessions'
 import { supabase } from './lib/supabase'
 import { hasAccess } from './lib/trial'
@@ -62,6 +63,9 @@ function useGate() {
     // from anything completed in the last 3 days).
     useDailyPickStore.getState().ensureFreshDay()
     useDailyPickStore.getState().loadAndCompute(getAllPools())
+
+    // Notes housekeeping: archive expired non-saved notes, delete >30-day archives, refresh local cache.
+    useNotesStore.getState().cleanupOnBoot()
 
     // Only pull profile once verified
     if (!user.email_confirmed_at) return

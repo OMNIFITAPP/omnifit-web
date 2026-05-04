@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { DIMS } from '../data/dims'
 import { useUserStore } from '../store/userStore'
 import { useTodayStore } from '../store/todayStore'
@@ -16,7 +16,9 @@ import { DailyQuote } from '../components/today/DailyQuote'
 import { ReadinessCheckinCard } from '../components/today/ReadinessCheckinCard'
 import { ReadinessCheckinFlow } from '../components/today/ReadinessCheckinFlow'
 import { PlanTomorrowOverlay } from '../components/today/PlanTomorrowOverlay'
-import { useDailyNotesStore } from '../store/dailyNotesStore'
+import { NotesView, NotebookIcon } from '../components/notes/NotesView'
+import { SeasonalCommitmentPrompt } from '../components/today/SeasonalCommitmentPrompt'
+import { useCommitmentsStore, shouldShowSeasonalPrompt } from '../store/commitmentsStore'
 import { computeTrial } from '../lib/trial'
 import type { DimConfig, Tier, Dimension, DailyPlan } from '../types'
 
@@ -59,21 +61,35 @@ export function TodayScreen() {
   const [swapDim, setSwapDim] = useState<DimConfig | null>(null)
   const [checkinOpen, setCheckinOpen] = useState(false)
   const [tomorrowOpen, setTomorrowOpen] = useState(false)
+  const [notesOpen, setNotesOpen] = useState(false)
+  const [notesDraft, setNotesDraft] = useState<{ tag: 'thought' | 'intention' | 'lesson' | 'gratitude'; linkedSessionId: string | null } | null>(null)
+  const [searchParams, setSearchParams] = useSearchParams()
 
-  // Daily notes — show "Note from yesterday" on Today (the note row whose
-  // date is today was authored last night during Plan Tomorrow).
-  const todayISO = new Date(
-    new Date().getFullYear(),
-    new Date().getMonth(),
-    new Date().getDate()
-  ).toISOString().split('T')[0]
-  const yesterdayNote = useDailyNotesStore((s) => s.notes[todayISO])
-  const loadNotes = useDailyNotesStore((s) => s.loadFor)
+  // Open NotesView in create-mode when DetailScreen sends us back with ?notes=new&session=ID
+  useEffect(() => {
+    if (searchParams.get('notes') === 'new') {
+      const sid = searchParams.get('session')
+      setNotesDraft({ tag: 'lesson', linkedSessionId: sid })
+      setNotesOpen(true)
+      const next = new URLSearchParams(searchParams)
+      next.delete('notes')
+      next.delete('session')
+      setSearchParams(next, { replace: true })
+    }
+  }, [searchParams, setSearchParams])
 
   useEffect(() => { ensureFreshDay() }, [ensureFreshDay])
   useEffect(() => { ensureFreshCheckin() }, [ensureFreshCheckin])
   useEffect(() => { loadCheckinFromServer() }, [loadCheckinFromServer])
-  useEffect(() => { loadNotes([todayISO]) }, [loadNotes, todayISO])
+
+  const commitments = useCommitmentsStore((s) => s.commitments)
+  const commitmentsLoaded = useCommitmentsStore((s) => s.loaded)
+  const loadCommitments = useCommitmentsStore((s) => s.load)
+  const [seasonalOpen, setSeasonalOpen] = useState(false)
+  useEffect(() => { loadCommitments() }, [loadCommitments])
+  useEffect(() => {
+    if (commitmentsLoaded && shouldShowSeasonalPrompt(commitments)) setSeasonalOpen(true)
+  }, [commitmentsLoaded, commitments])
 
   const basePlan: DailyPlan = followMode
     ? followPlanFor(focusDim, activeDims)
@@ -129,14 +145,40 @@ export function TodayScreen() {
       <div style={{ marginBottom: '14px' }}>
         <div
           style={{
-            fontSize: '11px',
-            color: 'var(--ink2)',
-            fontWeight: 600,
-            letterSpacing: '0.14em',
-            textTransform: 'uppercase',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '8px',
           }}
         >
-          {fmtDate()}
+          <div
+            style={{
+              fontSize: '11px',
+              color: 'var(--ink2)',
+              fontWeight: 600,
+              letterSpacing: '0.14em',
+              textTransform: 'uppercase',
+            }}
+          >
+            {fmtDate()}
+          </div>
+          <button
+            type="button"
+            aria-label="Open notes"
+            onClick={() => setNotesOpen(true)}
+            style={{
+              background: 'none',
+              border: 'none',
+              padding: '4px',
+              cursor: 'pointer',
+              color: 'var(--ink2)',
+              opacity: 0.5,
+              fontFamily: 'inherit',
+              lineHeight: 0,
+            }}
+          >
+            <NotebookIcon />
+          </button>
         </div>
         <h1
           style={{
@@ -190,40 +232,7 @@ export function TodayScreen() {
         />
       </div>
 
-      {/* Note from yesterday — quiet rose card, only when content is present */}
-      {yesterdayNote && yesterdayNote.trim().length > 0 && (
-        <div
-          style={{
-            background: 'color-mix(in oklab, var(--rose) 60%, transparent)',
-            borderRadius: '16px',
-            padding: '12px 16px',
-            marginBottom: '14px',
-          }}
-        >
-          <div
-            style={{
-              fontSize: '9px',
-              fontWeight: 700,
-              letterSpacing: '0.14em',
-              textTransform: 'uppercase',
-              color: 'var(--ink2)',
-            }}
-          >
-            Note from yesterday
-          </div>
-          <p
-            style={{
-              fontSize: '14px',
-              fontStyle: 'italic',
-              color: 'var(--ink)',
-              margin: '4px 0 0',
-              lineHeight: 1.5,
-            }}
-          >
-            {yesterdayNote}
-          </p>
-        </div>
-      )}
+      {/* Note-from-yesterday card removed — see NotesView (notebook icon top right) */}
 
       {/* Follow / Choose toggle */}
       <div
@@ -392,6 +401,17 @@ export function TodayScreen() {
       <ReadinessCheckinFlow
         open={checkinOpen}
         onClose={() => setCheckinOpen(false)}
+      />
+
+      <NotesView
+        open={notesOpen}
+        onClose={() => { setNotesOpen(false); setNotesDraft(null) }}
+        initialDraft={notesDraft}
+      />
+
+      <SeasonalCommitmentPrompt
+        open={seasonalOpen}
+        onClose={() => setSeasonalOpen(false)}
       />
     </div>
   )

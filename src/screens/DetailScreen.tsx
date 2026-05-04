@@ -304,9 +304,11 @@ function PracticeFlow({ dim, tier }: { dim: Dimension; tier: 'P' | 'S' | 'M' }) 
           <CompletionBody
             mantra={session.mantra}
             sessionName={session.name}
+            sessionId={session.id}
             durationSec={durationSec}
             alreadyChecked={alreadyChecked}
             onMarkDone={handleMarkDone}
+            onAddNote={(id) => navigate(`/?notes=new&session=${encodeURIComponent(id)}`)}
           />
         )}
       </div>
@@ -625,15 +627,19 @@ type FeltRating = 'easy' | 'right' | 'hard'
 function CompletionBody({
   mantra,
   sessionName,
+  sessionId,
   durationSec,
   alreadyChecked,
   onMarkDone,
+  onAddNote,
 }: {
   mantra: string
   sessionName: string
+  sessionId: string
   durationSec: number
   alreadyChecked: boolean
   onMarkDone: (felt: FeltRating | null) => void
+  onAddNote: (sessionId: string) => void
 }) {
   const [felt, setFelt] = useState<FeltRating | null>(null)
   const [copied, setCopied] = useState(false)
@@ -733,6 +739,24 @@ function CompletionBody({
             )
           })}
         </div>
+
+        <button
+          type="button"
+          onClick={() => onAddNote(sessionId)}
+          style={{
+            display: 'block',
+            margin: '14px auto 0',
+            background: 'none',
+            border: 'none',
+            color: 'var(--ink2)',
+            fontSize: '12px',
+            fontFamily: 'inherit',
+            cursor: 'pointer',
+            textDecoration: 'underline',
+          }}
+        >
+          Add a note about this session →
+        </button>
       </div>
 
       <button

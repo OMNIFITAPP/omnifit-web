@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { DIMS, DIM_MAP } from '../../data/dims'
-import { getSession } from '../../data/sessions'
+import { getSessionForDate } from '../../data/sessions'
 import { SwapSheet } from './SwapSheet'
-import { useDailyNotesStore } from '../../store/dailyNotesStore'
+import { useNotesStore } from '../../store/notesStore'
 import type { DailyPlan, DimConfig, Dimension, Tier } from '../../types'
 
 const NOTE_MAX = 200
@@ -24,36 +24,54 @@ function formatTitle(iso: string): { day: string; date: string } {
 }
 
 export function PlanTomorrowOverlay({ open, onClose, date, plan, onChangeTier }: Props) {
-  const noteFromStore = useDailyNotesStore((s) => s.notes[date] ?? '')
-  const setNote = useDailyNotesStore((s) => s.setNote)
-  const flushNote = useDailyNotesStore((s) => s.flush)
-  const loadFor = useDailyNotesStore((s) => s.loadFor)
+  const create = useNotesStore((s) => s.create)
+  const update = useNotesStore((s) => s.update)
+  const notes = useNotesStore((s) => s.notes)
+  const linkedId = `plan-${date}`
+  const existingNote = notes.find((n) => n.linked_session_id === linkedId && !n.archived_at)
+
   const [draft, setDraft] = useState('')
   const [swapDim, setSwapDim] = useState<DimConfig | null>(null)
-  const debounceRef = useRef<number | null>(null)
 
-  // Hydrate the note from the server when the overlay opens.
   useEffect(() => {
     if (!open) return
-    setDraft(noteFromStore)
-    loadFor([date])
+    setDraft(existingNote?.content ?? '')
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, date])
 
-  // Re-sync draft when store-side note arrives after mount.
-  useEffect(() => {
-    if (open) setDraft(noteFromStore)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [noteFromStore])
-
   function handleNoteChange(next: string) {
-    const trimmed = next.slice(0, NOTE_MAX)
-    setDraft(trimmed)
-    setNote(date, trimmed)
-    if (debounceRef.current) window.clearTimeout(debounceRef.current)
-    debounceRef.current = window.setTimeout(() => {
-      flushNote(date, trimmed)
-    }, SAVE_DEBOUNCE_MS)
+    setDraft(next.slice(0, NOTE_MAX))
+  }
+
+  async function persistNote() {
+    const trimmed = draft.trim()
+    if (trimmed.length === 0) return
+    if (existingNote) {
+      await update(existingNote.id, { content: trimmed })
+    } else {
+      // expires_at is set by create() with expiresInDays. 7 days per spec.
+      await create({
+        content: trimmed,
+        tag: 'intention',
+        saved: false,
+        expiresInDays: 7,
+        linkedSessionId: linkedId,
+      })
+    }
+  }
+
+  // Auto-save 800ms after last keystroke
+  useEffect(() => {
+    if (!open) return
+    if (draft === (existingNote?.content ?? '')) return
+    const id = window.setTimeout(persistNote, SAVE_DEBOUNCE_MS)
+    return () => window.clearTimeout(id)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draft, open])
+
+  // Save on close as well
+  function handleClose() {
+    persistNote().finally(onClose)
   }
 
   if (!open) return null
@@ -103,7 +121,7 @@ export function PlanTomorrowOverlay({ open, onClose, date, plan, onChangeTier }:
         <button
           type="button"
           aria-label="Close"
-          onClick={onClose}
+          onClick={handleClose}
           style={{
             background: 'none',
             border: 'none',
@@ -132,7 +150,8 @@ export function PlanTomorrowOverlay({ open, onClose, date, plan, onChangeTier }:
           {DIMS.map((dim) => {
             const tier = plan[dim.key] as Tier
             const isRest = tier === 'R'
-            const session = isRest ? null : getSession(dim.key, tier)
+            const targetDate = new Date(`${date}T00:00:00`)
+            const session = isRest ? null : getSessionForDate(targetDate, dim.key, tier as 'P' | 'S' | 'M')
             return (
               <button
                 key={dim.key}
@@ -212,7 +231,7 @@ export function PlanTomorrowOverlay({ open, onClose, date, plan, onChangeTier }:
               marginBottom: '8px',
             }}
           >
-            Note for tomorrow
+            Add a note
           </label>
           <div style={{ position: 'relative' }}>
             <textarea
