@@ -251,35 +251,39 @@ export function TodayScreen() {
         )}
       </div>
 
-      {/* Readiness check-in */}
-      <div style={{ marginBottom: '14px' }}>
-        <ReadinessCheckinCard
-          checkin={todayCheckin}
-          onBegin={() => setCheckinOpen(true)}
-          onRecheck={() => setCheckinOpen(true)}
-        />
-      </div>
-
-      {/* Readiness pill — full-width strip above the cards, only when checked in */}
-      {todayCheckin && (
-        <button
-          type="button"
-          onClick={() => setReadinessOpen(true)}
+      {/* Readiness — CTA card when no check-in, pill when checked in (never both) */}
+      {!todayCheckin ? (
+        <div style={{ marginBottom: '14px' }}>
+          <ReadinessCheckinCard
+            checkin={null}
+            onBegin={() => setCheckinOpen(true)}
+            onRecheck={() => setCheckinOpen(true)}
+          />
+        </div>
+      ) : (
+        <div
           style={{
-            width: '100%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            background: 'color-mix(in oklab, var(--rose) 50%, transparent)',
-            border: 'none',
-            borderRadius: '16px',
-            padding: '14px 18px',
+            position: 'relative',
             marginBottom: '14px',
-            cursor: 'pointer',
-            fontFamily: 'inherit',
-            textAlign: 'left',
           }}
         >
+          <button
+            type="button"
+            onClick={() => setReadinessOpen(true)}
+            style={{
+              width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              background: 'color-mix(in oklab, var(--rose) 50%, transparent)',
+              border: 'none',
+              borderRadius: '16px',
+              padding: '14px 18px',
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+              textAlign: 'left',
+            }}
+          >
           <div>
             <div
               style={{
@@ -304,8 +308,28 @@ export function TodayScreen() {
               {todayCheckin.state}
             </div>
           </div>
-          <span aria-hidden style={{ fontSize: '16px', color: 'var(--ink2)' }}>›</span>
         </button>
+        <button
+          type="button"
+          onClick={() => setCheckinOpen(true)}
+          style={{
+            position: 'absolute',
+            top: '12px',
+            right: '14px',
+            background: 'none',
+            border: 'none',
+            color: 'var(--ink2)',
+            fontSize: '11px',
+            fontWeight: 600,
+            cursor: 'pointer',
+            fontFamily: 'inherit',
+            textDecoration: 'underline',
+            padding: '4px 2px',
+          }}
+        >
+          Re-check
+        </button>
+        </div>
       )}
 
       {/* Rest banner — cards stay visible but greyed */}

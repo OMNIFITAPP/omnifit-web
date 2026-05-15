@@ -18,11 +18,15 @@ function computeScore(
   now: Date
 ): number {
   const cutoff = new Date(now.getTime() - WINDOW_DAYS * 24 * 60 * 60 * 1000)
-  let score = BASELINE
-  let lastDate = cutoff
   const usable = completions
     .filter((c) => new Date(c.completed_at) >= cutoff && new Date(c.completed_at) <= now)
     .sort((a, b) => +new Date(a.completed_at) - +new Date(b.completed_at))
+
+  // No activity in the window — show the baseline. No decay below.
+  if (usable.length === 0) return BASELINE
+
+  let score = BASELINE
+  let lastDate = cutoff
   for (const c of usable) {
     const at = new Date(c.completed_at)
     const days = (at.getTime() - lastDate.getTime()) / (24 * 60 * 60 * 1000)
@@ -32,7 +36,7 @@ function computeScore(
   }
   const finalDays = (now.getTime() - lastDate.getTime()) / (24 * 60 * 60 * 1000)
   score *= Math.pow(DECAY_PER_DAY, finalDays)
-  return Math.round(Math.max(0, score))
+  return Math.round(Math.max(BASELINE, score))
 }
 
 interface CapacityBarsProps {

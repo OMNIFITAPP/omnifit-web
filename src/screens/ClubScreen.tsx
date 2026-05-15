@@ -46,7 +46,7 @@ export function ClubScreen() {
         role="tablist"
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(4, 1fr)',
+          gridTemplateColumns: 'repeat(3, 1fr)',
           background: 'var(--card)',
           border: '1px solid var(--line)',
           borderRadius: '14px',

@@ -356,6 +356,30 @@ export function AccountTab() {
 
       {/* Seasonal commitments — current at top, past collapsed */}
       <CommitmentsList legacyWhy={commitWhy} />
+
+      {/* Sign out — small, plain, at the very bottom */}
+      <button
+        type="button"
+        onClick={async () => {
+          await supabase.auth.signOut()
+          localStorage.removeItem('omnifit-last-seen')
+          window.location.assign('/')
+        }}
+        style={{
+          alignSelf: 'center',
+          background: 'none',
+          border: 'none',
+          color: 'var(--ink2)',
+          fontSize: '12px',
+          fontFamily: 'inherit',
+          cursor: 'pointer',
+          padding: '12px',
+          marginTop: '6px',
+          textDecoration: 'underline',
+        }}
+      >
+        Sign out
+      </button>
     </div>
   )
 }

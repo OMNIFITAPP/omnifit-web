@@ -13,7 +13,8 @@ const COLS_BY_VIEW = { month: 5, quarter: 13, year: 52 } as const
 const SQ_BY_VIEW   = { month: 28, quarter: 18, year: 9 } as const
 type View = keyof typeof COLS_BY_VIEW
 
-const MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+const MONTH_SHORT  = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+const MONTH_LETTER = ['J',   'F',   'M',   'A',   'M',   'J',   'J',   'A',   'S',   'O',   'N',   'D'  ]
 
 /** Monday-anchored start of the week containing `d`. */
 function mondayOf(d: Date): Date {
@@ -100,14 +101,16 @@ export function ActivityGrid({ onOpenCalendar }: ActivityGridProps = {}) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, view])
 
-  // Month labels — emit the abbreviated month name at the column where that month begins,
-  // or for the year view, abbreviate enough to fit.
+  // Month labels — emit at the column where a new month begins. For the year
+  // view, use a single-letter label so 12 labels fit across 52 narrow columns
+  // without overlapping.
+  const labelTable = view === 'year' ? MONTH_LETTER : MONTH_SHORT
   const monthLabels: Array<{ col: number; label: string }> = []
   let lastMonth = -1
   for (let c = 0; c < columns.length; c++) {
     const m = columns[c][0].getMonth()
     if (m !== lastMonth) {
-      monthLabels.push({ col: c, label: MONTH_SHORT[m] })
+      monthLabels.push({ col: c, label: labelTable[m] })
       lastMonth = m
     }
   }
