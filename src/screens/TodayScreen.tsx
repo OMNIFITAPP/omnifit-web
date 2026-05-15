@@ -19,6 +19,8 @@ import { PlanTomorrowOverlay } from '../components/today/PlanTomorrowOverlay'
 import { NotesView, NotebookIcon } from '../components/notes/NotesView'
 import { SeasonalCommitmentPrompt } from '../components/today/SeasonalCommitmentPrompt'
 import { useCommitmentsStore, shouldShowSeasonalPrompt } from '../store/commitmentsStore'
+import { ReadinessSheet } from '../components/myway/ReadinessSheet'
+import { supabase } from '../lib/supabase'
 import { computeTrial } from '../lib/trial'
 import type { DimConfig, Tier, Dimension, DailyPlan } from '../types'
 
@@ -41,8 +43,7 @@ export function TodayScreen() {
   const name = useUserStore((s) => s.name)
   const subscriptionStatus = useUserStore((s) => s.subscriptionStatus)
   const trialStartedAt = useUserStore((s) => s.trialStartedAt)
-  const followMode = useUserStore((s) => s.followMode)
-  const setFollowMode = useUserStore((s) => s.setFollowMode)
+  const appPicksForMe = useUserStore((s) => s.appPicksForMe)
   const activeDims = useUserStore((s) => s.activeDims)
   const focusDim = useUserStore((s) => s.focusDim)
   const orderPreference = useUserStore((s) => s.orderPreference)
@@ -62,6 +63,7 @@ export function TodayScreen() {
   const [checkinOpen, setCheckinOpen] = useState(false)
   const [tomorrowOpen, setTomorrowOpen] = useState(false)
   const [notesOpen, setNotesOpen] = useState(false)
+  const [readinessOpen, setReadinessOpen] = useState(false)
   const [notesDraft, setNotesDraft] = useState<{ tag: 'thought' | 'intention' | 'lesson' | 'gratitude'; linkedSessionId: string | null } | null>(null)
   const [searchParams, setSearchParams] = useSearchParams()
 
@@ -82,6 +84,32 @@ export function TodayScreen() {
   useEffect(() => { ensureFreshCheckin() }, [ensureFreshCheckin])
   useEffect(() => { loadCheckinFromServer() }, [loadCheckinFromServer])
 
+  // Auto-open readiness check-in on the user's first launch of a new day.
+  // Source of truth: profiles.last_seen_date. localStorage mirror is a
+  // 1-render optimization; DB wins on disagreement.
+  const lastSeenDate = useUserStore((s) => s.lastSeenDate)
+  const setLastSeenDate = useUserStore((s) => s.setLastSeenDate)
+  const userId = useUserStore((s) => s.userId)
+  useEffect(() => {
+    if (!userId) return
+    const d = new Date()
+    const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+
+    const localLast = localStorage.getItem('omnifit-last-seen')
+    const last = lastSeenDate ?? localLast
+    if (last === today) return
+
+    // Write today to local + DB before considering the auto-open
+    localStorage.setItem('omnifit-last-seen', today)
+    setLastSeenDate(today)
+    supabase.from('profiles').update({ last_seen_date: today }).eq('id', userId).then(() => {})
+
+    // Only auto-open if no check-in row exists for today (loadCheckinFromServer
+    // already populated todayCheckin if it does).
+    if (!todayCheckin) setCheckinOpen(true)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, lastSeenDate, todayCheckin])
+
   const commitments = useCommitmentsStore((s) => s.commitments)
   const commitmentsLoaded = useCommitmentsStore((s) => s.loaded)
   const loadCommitments = useCommitmentsStore((s) => s.load)
@@ -91,13 +119,13 @@ export function TodayScreen() {
     if (commitmentsLoaded && shouldShowSeasonalPrompt(commitments)) setSeasonalOpen(true)
   }, [commitmentsLoaded, commitments])
 
-  const basePlan: DailyPlan = followMode
+  const basePlan: DailyPlan = appPicksForMe
     ? followPlanFor(focusDim, activeDims)
     : plan
 
-  // Only adjust tiers in Follow mode. Rest state keeps base plan but greys cards.
+  // Only adjust tiers when the app is picking. Rest state still greys cards.
   const effectivePlan: DailyPlan =
-    followMode && todayCheckin ? adjustPlanForState(basePlan, todayCheckin.state) : basePlan
+    appPicksForMe && todayCheckin ? adjustPlanForState(basePlan, todayCheckin.state) : basePlan
 
   // Ordered + active dim list respecting user drag-reorder preference.
   const visibleDims: DimConfig[] = useMemo(() => {
@@ -232,70 +260,56 @@ export function TodayScreen() {
         />
       </div>
 
-      {/* Note-from-yesterday card removed — see NotesView (notebook icon top right) */}
-
-      {/* Follow / Choose toggle */}
-      <div
-        role="tablist"
-        style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
-          background: 'var(--card)',
-          border: '1px solid var(--line)',
-          borderRadius: '12px',
-          padding: '3px',
-          gap: '3px',
-          marginBottom: '16px',
-          width: '176px',
-        }}
-      >
-        {(['follow', 'choose'] as const).map((mode) => {
-          const active = mode === 'follow' ? followMode : !followMode
-          return (
-            <button
-              key={mode}
-              role="tab"
-              aria-selected={active}
-              type="button"
-              onClick={() => setFollowMode(mode === 'follow')}
+      {/* Readiness pill — full-width strip above the cards, only when checked in */}
+      {todayCheckin && (
+        <button
+          type="button"
+          onClick={() => setReadinessOpen(true)}
+          style={{
+            width: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            background: 'color-mix(in oklab, var(--rose) 50%, transparent)',
+            border: 'none',
+            borderRadius: '16px',
+            padding: '14px 18px',
+            marginBottom: '14px',
+            cursor: 'pointer',
+            fontFamily: 'inherit',
+            textAlign: 'left',
+          }}
+        >
+          <div>
+            <div
               style={{
-                fontSize: '11px',
-                fontWeight: 600,
-                letterSpacing: '0.04em',
-                padding: '7px 4px',
-                borderRadius: '9px',
-                border: 'none',
-                background: active ? 'var(--ink)' : 'transparent',
-                color: active ? 'var(--cream)' : 'var(--ink2)',
-                cursor: 'pointer',
-                fontFamily: 'inherit',
+                fontSize: '10px',
+                letterSpacing: '0.14em',
                 textTransform: 'uppercase',
+                color: 'var(--ink2)',
+                fontWeight: 700,
               }}
             >
-              {mode === 'follow' ? 'Follow' : 'Choose'}
-            </button>
-          )
-        })}
-      </div>
-
-      {/* Rest banner (Follow mode, Rest state) — cards stay visible, greyed */}
-      {isRestDay && followMode && (
-        <div
-          style={{
-            fontSize: '12px',
-            color: 'var(--ink2)',
-            fontStyle: 'italic',
-            textAlign: 'center',
-            lineHeight: 1.5,
-            marginBottom: '10px',
-          }}
-        >
-          Today reads: Rest. The wave benefits from stillness.
-        </div>
+              Today reads
+            </div>
+            <div
+              style={{
+                fontSize: '20px',
+                fontWeight: 600,
+                color: 'var(--ink)',
+                marginTop: '2px',
+                letterSpacing: '-0.01em',
+              }}
+            >
+              {todayCheckin.state}
+            </div>
+          </div>
+          <span aria-hidden style={{ fontSize: '16px', color: 'var(--ink2)' }}>›</span>
+        </button>
       )}
 
-      {/* Choose mode note when a check-in exists */}
-      {!followMode && todayCheckin && (
+      {/* Rest banner — cards stay visible but greyed */}
+      {isRestDay && (
         <div
           style={{
             fontSize: '12px',
@@ -306,7 +320,7 @@ export function TodayScreen() {
             marginBottom: '10px',
           }}
         >
-          Today reads {todayCheckin.state}. {shortCoaching(todayCheckin.state)}
+          {shortCoaching(todayCheckin!.state)}
         </div>
       )}
 
@@ -316,7 +330,7 @@ export function TodayScreen() {
         plan={effectivePlan as Record<Dimension, Tier>}
         checked={checked}
         dayComplete={dayComplete}
-        allowSwap={!followMode}
+        allowSwap={!appPicksForMe}
         greyAll={greyAll}
         onOpenDetail={(k) => {
           const t = effectivePlan[k]
@@ -413,6 +427,8 @@ export function TodayScreen() {
         open={seasonalOpen}
         onClose={() => setSeasonalOpen(false)}
       />
+
+      <ReadinessSheet open={readinessOpen} onClose={() => setReadinessOpen(false)} />
     </div>
   )
 }

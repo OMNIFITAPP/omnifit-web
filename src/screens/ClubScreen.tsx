@@ -1,16 +1,14 @@
 import { useEffect, useState } from 'react'
-import { TalkTab } from '../components/club/TalkTab'
-import { ShelfTab } from '../components/club/ShelfTab'
+import { LibraryTab } from '../components/club/LibraryTab'
 import { CirclesTab } from '../components/club/CirclesTab'
 import { VoicesTab } from '../components/club/VoicesTab'
 
-type RoomKey = 'talk' | 'voices' | 'circles' | 'shelf'
+type RoomKey = 'library' | 'voices' | 'circles'
 
 const ROOMS: Array<{ key: RoomKey; label: string }> = [
-  { key: 'talk',    label: 'Talk'    },
+  { key: 'library', label: 'Library' },
   { key: 'voices',  label: 'Voices'  },
   { key: 'circles', label: 'Circles' },
-  { key: 'shelf',   label: 'Shelf'   },
 ]
 
 /**
@@ -19,7 +17,7 @@ const ROOMS: Array<{ key: RoomKey; label: string }> = [
  * through, no matter what z-index, opacity, or overflow rules apply.
  */
 export function ClubScreen() {
-  const [room, setRoom] = useState<RoomKey>('talk')
+  const [room, setRoom] = useState<RoomKey>('library')
 
   // Reset the AppLayout outer scroll to the top whenever the user switches
   // tabs — otherwise switching from a long pane to a short one leaves the
@@ -86,10 +84,9 @@ export function ClubScreen() {
 
       {/* No inner scroll region — AppLayout's outer scroll owns the page. */}
       <div style={{ width: '100%' }}>
-        {room === 'talk'    && <TalkTab />}
+        {room === 'library' && <LibraryTab />}
         {room === 'voices'  && <VoicesTab />}
         {room === 'circles' && <CirclesTab />}
-        {room === 'shelf'   && <ShelfTab />}
       </div>
     </div>
   )

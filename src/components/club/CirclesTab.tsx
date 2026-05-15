@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useCityStore, CITIES } from '../../store/cityStore'
 import { supabase } from '../../lib/supabase'
+import { useUserStore } from '../../store/userStore'
 import { DIM_MAP } from '../../data/dims'
 import { BottomSheet } from '../layout/BottomSheet'
 import type { Dimension } from '../../types'
@@ -38,9 +40,12 @@ function formatMemberSince(iso: string): string {
 export function CirclesTab() {
   const city = useCityStore((s) => s.city)
   const setCity = useCityStore((s) => s.setCity)
+  const userId = useUserStore((s) => s.userId)
+  const navigate = useNavigate()
   const [cityOpen, setCityOpen] = useState(false)
   const [circles, setCircles] = useState<Circle[]>([])
   const [loading, setLoading] = useState(true)
+  const [myRsvps, setMyRsvps] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     let cancelled = false
@@ -56,6 +61,18 @@ export function CirclesTab() {
         if (cancelled) return
         if (error) setCircles([])
         else setCircles((data as Circle[]) ?? [])
+
+        if (userId && data && data.length > 0) {
+          const ids = (data as Circle[]).map((c) => c.id)
+          const { data: rsvps } = await supabase
+            .from('circle_rsvps')
+            .select('circle_id, status')
+            .eq('user_id', userId)
+            .in('circle_id', ids)
+          if (!cancelled && rsvps) {
+            setMyRsvps(new Set((rsvps as Array<{ circle_id: string }>).map((r) => r.circle_id)))
+          }
+        }
       } catch {
         if (!cancelled) setCircles([])
       } finally {
@@ -63,7 +80,7 @@ export function CirclesTab() {
       }
     })()
     return () => { cancelled = true }
-  }, [city])
+  }, [city, userId])
 
   return (
     <div>
@@ -117,7 +134,12 @@ export function CirclesTab() {
         <>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {circles.map((c) => (
-              <CircleCard key={c.id} circle={c} />
+              <CircleCard
+                key={c.id}
+                circle={c}
+                going={myRsvps.has(c.id)}
+                onTap={() => navigate(`/circle/${c.id}`)}
+              />
             ))}
           </div>
 
@@ -194,13 +216,19 @@ export function CirclesTab() {
   )
 }
 
-function CircleCard({ circle }: { circle: Circle }) {
+function CircleCard({ circle, going, onTap }: { circle: Circle; going: boolean; onTap: () => void }) {
   const dim = DIM_MAP[circle.dimension]
   const full = circle.current_spots >= circle.max_spots
   return (
-    <div
+    <button
+      type="button"
+      onClick={onTap}
       className={full ? 'spots full' : 'spots'}
       style={{
+        textAlign: 'left',
+        fontFamily: 'inherit',
+        cursor: 'pointer',
+        width: '100%',
         position: 'relative',
         background: 'var(--card)',
         border: '1px solid var(--line)',
@@ -263,7 +291,23 @@ function CircleCard({ circle }: { circle: Circle }) {
         Hosted by <strong style={{ color: 'var(--ink)' }}>{circle.host_name}</strong>
         {circle.host_member_since && ` · member since ${formatMemberSince(circle.host_member_since)}`}
       </div>
-    </div>
+      {going && (
+        <div
+          style={{
+            position: 'absolute',
+            top: '10px',
+            right: '14px',
+            fontSize: '9px',
+            fontWeight: 700,
+            letterSpacing: '0.14em',
+            textTransform: 'uppercase',
+            color: 'var(--ink2)',
+          }}
+        >
+          Going
+        </div>
+      )}
+    </button>
   )
 }
 

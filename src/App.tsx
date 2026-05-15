@@ -12,6 +12,7 @@ import { MyWayScreen } from './screens/MyWayScreen'
 import { ClubScreen } from './screens/ClubScreen'
 import { DetailScreen } from './screens/DetailScreen'
 import { ArticleScreen } from './screens/ArticleScreen'
+import { CircleScreen } from './screens/CircleScreen'
 import { useUserStore } from './store/userStore'
 import { useDailyPickStore } from './store/dailyPickStore'
 import { useNotesStore } from './store/notesStore'
@@ -75,9 +76,7 @@ function useGate() {
       try {
         const { data: profile } = await supabase
           .from('profiles')
-          .select(
-            'name, commit_why, focus_dim, subscription_status, plan_tier, trial_started_at, stripe_customer_id, stripe_subscription_id'
-          )
+          .select('name, commit_why, focus_dim, subscription_status, plan_tier, trial_started_at, stripe_customer_id, stripe_subscription_id, app_picks_for_me, capacity_explained_dismissed, last_seen_date')
           .eq('id', user.id)
           .maybeSingle()
         if (cancelled || !profile) return
@@ -98,6 +97,18 @@ function useGate() {
             stripeCustomerId: (profile.stripe_customer_id as string) ?? null,
             stripeSubscriptionId: (profile.stripe_subscription_id as string) ?? null,
           })
+        }
+
+        // Phase 3f profile fields — DB is source of truth
+        const u = useUserStore.getState()
+        if (typeof profile.app_picks_for_me === 'boolean') {
+          u.setAppPicksForMe(profile.app_picks_for_me)
+        }
+        if (typeof profile.capacity_explained_dismissed === 'boolean') {
+          u.setCapacityExplainedDismissed(profile.capacity_explained_dismissed)
+        }
+        if (profile.last_seen_date) {
+          u.setLastSeenDate(profile.last_seen_date as string)
         }
       } catch {
         /* fall through to local defaults */
@@ -185,6 +196,7 @@ export default function App() {
         </Route>
         <Route path="session/:dim/:tier" element={<DetailScreen />} />
         <Route path="article/:id" element={<ArticleScreen />} />
+        <Route path="circle/:id" element={<CircleScreen />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>

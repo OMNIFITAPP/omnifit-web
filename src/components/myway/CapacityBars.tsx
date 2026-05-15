@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { DIMS } from '../../data/dims'
 import { supabase } from '../../lib/supabase'
 import { useUserStore } from '../../store/userStore'
@@ -7,7 +7,7 @@ import type { Dimension } from '../../types'
 
 const TIER_VALUE: Record<string, number> = { P: 0.5, S: 0.3, M: 0.1 }
 const DECAY_PER_DAY = 0.985
-const BASELINE = 40
+const BASELINE = 10
 const WINDOW_DAYS = 28
 
 interface DimScore { value: number; trend: number }
@@ -52,6 +52,28 @@ export function CapacityBars({ activeDims }: CapacityBarsProps) {
     emotional: { value: BASELINE, trend: 0 },
     neuro:     { value: BASELINE, trend: 0 },
   })
+  const userId = useUserStore((s) => s.userId)
+  const dismissed = useUserStore((s) => s.capacityExplainedDismissed)
+  const setDismissed = useUserStore((s) => s.setCapacityExplainedDismissed)
+  const anyDimEarned = useMemo(
+    () => Object.values(scores).some((s) => s.value >= 25),
+    [scores]
+  )
+  // Auto-dismiss once any dimension hits 25.
+  useEffect(() => {
+    if (anyDimEarned && !dismissed && userId) {
+      setDismissed(true)
+      supabase.from('profiles').update({ capacity_explained_dismissed: true }).eq('id', userId).then(() => {})
+    }
+  }, [anyDimEarned, dismissed, userId, setDismissed])
+
+  function manualDismiss() {
+    setDismissed(true)
+    if (userId) {
+      supabase.from('profiles').update({ capacity_explained_dismissed: true }).eq('id', userId).then(() => {})
+    }
+  }
+  const showTeaching = !dismissed
 
   // Compute capacity scores from completions (current + 7-day-ago for trend)
   useEffect(() => {
@@ -129,6 +151,57 @@ export function CapacityBars({ activeDims }: CapacityBarsProps) {
       >
         Capacity
       </div>
+
+      {showTeaching && (
+        <div
+          style={{
+            position: 'relative',
+            background: 'color-mix(in oklab, var(--rose) 50%, transparent)',
+            borderRadius: '14px',
+            padding: '14px 16px',
+            marginBottom: '14px',
+          }}
+        >
+          <div
+            style={{
+              fontSize: '10px',
+              fontWeight: 700,
+              letterSpacing: '0.14em',
+              textTransform: 'uppercase',
+              color: 'var(--ink2)',
+              marginBottom: '4px',
+            }}
+          >
+            Long view
+          </div>
+          <p style={{ fontSize: '13px', color: 'var(--ink)', lineHeight: 1.5, margin: 0 }}>
+            What you've built over weeks. Moves slowly. Today's state is{' '}
+            Readiness — a different thing.
+          </p>
+          <button
+            type="button"
+            aria-label="Dismiss"
+            onClick={manualDismiss}
+            style={{
+              position: 'absolute',
+              top: '8px',
+              right: '10px',
+              background: 'none',
+              border: 'none',
+              padding: '4px',
+              cursor: 'pointer',
+              color: 'var(--ink2)',
+              opacity: 0.5,
+              fontSize: '10px',
+              fontFamily: 'inherit',
+              lineHeight: 1,
+            }}
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
         {visible.map((dim) => {
           const c = scores[dim.key as Dimension]

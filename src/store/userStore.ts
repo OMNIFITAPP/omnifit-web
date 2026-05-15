@@ -46,11 +46,13 @@ interface UserState {
   memberSince: string           // ISO date (yyyy-mm-dd)
 
   // Preferences
-  followMode: boolean           // true = app-selected plan, false = manual
+  appPicksForMe: boolean        // mirrors profiles.app_picks_for_me; replaces followMode
   activeDims: Dimension[]       // dims shown on Today; all 4 by default
   completionSound: boolean      // bell at session end
   primaryFocus: PrimaryFocus | null
   orderPreference: Dimension[] | null  // user-defined Today card order
+  capacityExplainedDismissed: boolean
+  lastSeenDate: string | null   // yyyy-mm-dd, mirrors profiles.last_seen_date
 
   // Billing
   subscriptionStatus: SubscriptionStatus
@@ -77,11 +79,13 @@ interface UserActions {
     stripeCustomerId?: string | null
     stripeSubscriptionId?: string | null
   }) => void
-  setFollowMode: (v: boolean) => void
+  setAppPicksForMe: (v: boolean) => void
   toggleActiveDim: (dim: Dimension) => void
   setCompletionSound: (v: boolean) => void
   setPrimaryFocus: (v: PrimaryFocus | null) => void
   setOrderPreference: (order: Dimension[]) => void
+  setCapacityExplainedDismissed: (v: boolean) => void
+  setLastSeenDate: (iso: string) => void
   reset: () => void
 }
 
@@ -96,11 +100,13 @@ const DEFAULT_STATE: UserState = {
   isOnboarded: false,
   memberSince: '',
 
-  followMode: true,
+  appPicksForMe: true,
   activeDims: [...ALL_DIMS],
   completionSound: true,
   primaryFocus: null,
   orderPreference: null,
+  capacityExplainedDismissed: false,
+  lastSeenDate: null,
 
   subscriptionStatus: 'trial',
   planTier: null,
@@ -139,13 +145,17 @@ export const useUserStore = create<UserState & UserActions>()(
           stripeSubscriptionId: stripeSubscriptionId ?? s.stripeSubscriptionId,
         })),
 
-      setFollowMode: (v) => set({ followMode: v }),
+      setAppPicksForMe: (v) => set({ appPicksForMe: v }),
 
       setCompletionSound: (v) => set({ completionSound: v }),
 
       setPrimaryFocus: (v) => set({ primaryFocus: v }),
 
       setOrderPreference: (order) => set({ orderPreference: order }),
+
+      setCapacityExplainedDismissed: (v) => set({ capacityExplainedDismissed: v }),
+
+      setLastSeenDate: (iso) => set({ lastSeenDate: iso }),
 
       toggleActiveDim: (dim) =>
         set((s) => {
