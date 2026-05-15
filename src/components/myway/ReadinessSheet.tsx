@@ -8,6 +8,9 @@ import {
 interface Props {
   open: boolean
   onClose: () => void
+  /** Optional — when provided, a "Re-check" link appears at the top of the
+   *  sheet that closes this sheet and triggers the check-in flow. */
+  onRecheck?: () => void
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -44,7 +47,7 @@ const bodyStyle: React.CSSProperties = {
   margin: '0 0 6px',
 }
 
-export function ReadinessSheet({ open, onClose }: Props) {
+export function ReadinessSheet({ open, onClose, onRecheck }: Props) {
   const checkin = useReadinessCheckinStore((s) => s.today)
 
   // Build coaching lines from checkin (2-3 most relevant)
@@ -61,6 +64,25 @@ export function ReadinessSheet({ open, onClose }: Props) {
 
   return (
     <BottomSheet open={open} onClose={onClose} eyebrow="Today" title="Readiness today">
+      {onRecheck && checkin && (
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '12px' }}>
+          <button
+            type="button"
+            onClick={() => { onClose(); onRecheck() }}
+            style={{
+              background: 'none',
+              border: 'none',
+              padding: '4px 2px',
+              color: 'var(--ink2)',
+              fontSize: '13px',
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+            }}
+          >
+            Re-check
+          </button>
+        </div>
+      )}
       <Section title="What this is">
         <p style={bodyStyle}>
           Readiness is your state today — what the system has to work with right now.

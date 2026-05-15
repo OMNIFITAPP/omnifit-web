@@ -53,6 +53,7 @@ interface UserState {
   orderPreference: Dimension[] | null  // user-defined Today card order
   capacityExplainedDismissed: boolean
   lastSeenDate: string | null   // yyyy-mm-dd, mirrors profiles.last_seen_date
+  profileLoaded: boolean        // true once we've actually hydrated from Supabase
 
   // Billing
   subscriptionStatus: SubscriptionStatus
@@ -86,6 +87,7 @@ interface UserActions {
   setOrderPreference: (order: Dimension[]) => void
   setCapacityExplainedDismissed: (v: boolean) => void
   setLastSeenDate: (iso: string) => void
+  setProfileLoaded: (v: boolean) => void
   reset: () => void
 }
 
@@ -107,6 +109,7 @@ const DEFAULT_STATE: UserState = {
   orderPreference: null,
   capacityExplainedDismissed: false,
   lastSeenDate: null,
+  profileLoaded: false,
 
   subscriptionStatus: 'trial',
   planTier: null,
@@ -156,6 +159,8 @@ export const useUserStore = create<UserState & UserActions>()(
       setCapacityExplainedDismissed: (v) => set({ capacityExplainedDismissed: v }),
 
       setLastSeenDate: (iso) => set({ lastSeenDate: iso }),
+
+      setProfileLoaded: (v) => set({ profileLoaded: v }),
 
       toggleActiveDim: (dim) =>
         set((s) => {

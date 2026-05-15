@@ -86,14 +86,17 @@ export function LibraryTab() {
         })}
       </div>
 
-      {/* Dimension chips */}
+      {/* Dimension chips — horizontally scrollable, no mid-word truncation */}
       <div
         className="no-scrollbar"
         style={{
           display: 'flex',
-          gap: '6px',
+          flexWrap: 'nowrap',
+          gap: '8px',
           overflowX: 'auto',
           paddingBottom: '10px',
+          paddingLeft: '2px',
+          paddingRight: '20px',     // breathing room past the last chip
           marginBottom: '4px',
         }}
       >

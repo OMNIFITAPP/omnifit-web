@@ -110,6 +110,7 @@ function useGate() {
         if (profile.last_seen_date) {
           u.setLastSeenDate(profile.last_seen_date as string)
         }
+        u.setProfileLoaded(true)
       } catch {
         /* fall through to local defaults */
       }

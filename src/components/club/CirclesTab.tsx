@@ -83,7 +83,7 @@ export function CirclesTab() {
   }, [city, userId])
 
   return (
-    <div>
+    <div style={{ paddingBottom: 'calc(96px + env(safe-area-inset-bottom, 0px))' }}>
       {/* City header */}
       <div
         style={{

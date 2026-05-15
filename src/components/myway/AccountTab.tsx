@@ -357,7 +357,7 @@ export function AccountTab() {
       {/* Seasonal commitments — current at top, past collapsed */}
       <CommitmentsList legacyWhy={commitWhy} />
 
-      {/* Sign out — small, plain, at the very bottom */}
+      {/* Sign out — full width, calm and direct. No confirm dialog. */}
       <button
         type="button"
         onClick={async () => {
@@ -365,17 +365,21 @@ export function AccountTab() {
           localStorage.removeItem('omnifit-last-seen')
           window.location.assign('/')
         }}
+        onTouchStart={(e) => { (e.currentTarget as HTMLButtonElement).style.opacity = '0.6' }}
+        onTouchEnd={(e) => { (e.currentTarget as HTMLButtonElement).style.opacity = '1' }}
         style={{
-          alignSelf: 'center',
-          background: 'none',
+          width: '100%',
+          background: 'transparent',
           border: 'none',
           color: 'var(--ink2)',
-          fontSize: '12px',
+          fontSize: '14px',
+          fontWeight: 500,
           fontFamily: 'inherit',
           cursor: 'pointer',
-          padding: '12px',
-          marginTop: '6px',
-          textDecoration: 'underline',
+          padding: '18px 0',
+          marginTop: '24px',
+          marginBottom: 'calc(32px + env(safe-area-inset-bottom, 0px))',
+          textAlign: 'center',
         }}
       >
         Sign out

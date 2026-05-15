@@ -85,30 +85,51 @@ export function TodayScreen() {
   useEffect(() => { loadCheckinFromServer() }, [loadCheckinFromServer])
 
   // Auto-open readiness check-in on the user's first launch of a new day.
-  // Source of truth: profiles.last_seen_date. localStorage mirror is a
-  // 1-render optimization; DB wins on disagreement.
+  // Source of truth: profiles.last_seen_date. Gate the whole thing on
+  // profileLoaded so we don't fire before DB hydration; check the DB for an
+  // existing row directly so we don't false-positive while loadCheckinFromServer
+  // is still in flight.
   const lastSeenDate = useUserStore((s) => s.lastSeenDate)
   const setLastSeenDate = useUserStore((s) => s.setLastSeenDate)
   const userId = useUserStore((s) => s.userId)
+  const isOnboarded = useUserStore((s) => s.isOnboarded)
+  const profileLoaded = useUserStore((s) => s.profileLoaded)
   useEffect(() => {
+    if (!profileLoaded) return
     if (!userId) return
+    if (!isOnboarded) return
+
     const d = new Date()
     const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 
-    const localLast = localStorage.getItem('omnifit-last-seen')
-    const last = lastSeenDate ?? localLast
-    if (last === today) return
+    console.log('[autoCheckin]', { profile_last_seen: lastSeenDate, todayISO: today, profileLoaded })
+    if (lastSeenDate === today) return
 
-    // Write today to local + DB before considering the auto-open
-    localStorage.setItem('omnifit-last-seen', today)
-    setLastSeenDate(today)
-    supabase.from('profiles').update({ last_seen_date: today }).eq('id', userId).then(() => {})
+    let cancelled = false
+    ;(async () => {
+      // Authoritative DB check — has the user already checked in today?
+      const { data: row, error } = await supabase
+        .from('readiness_checkins')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('date', today)
+        .maybeSingle()
+      if (cancelled) return
+      if (error) console.error('[autoCheckin] DB check error', error)
+      const hasCheckin = !!row
 
-    // Only auto-open if no check-in row exists for today (loadCheckinFromServer
-    // already populated todayCheckin if it does).
-    if (!todayCheckin) setCheckinOpen(true)
+      // Always advance last_seen_date — both with and without an existing row.
+      // (With: silently advance, no overlay. Without: advance and open.)
+      localStorage.setItem('omnifit-last-seen', today)
+      setLastSeenDate(today)
+      supabase.from('profiles').update({ last_seen_date: today }).eq('id', userId).then(() => {})
+
+      console.log('[autoCheckin] decision', { hasCheckin, willOpen: !hasCheckin })
+      if (!hasCheckin) setCheckinOpen(true)
+    })()
+    return () => { cancelled = true }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId, lastSeenDate, todayCheckin])
+  }, [profileLoaded, userId, isOnboarded, lastSeenDate])
 
   const commitments = useCommitmentsStore((s) => s.commitments)
   const commitmentsLoaded = useCommitmentsStore((s) => s.loaded)
@@ -308,26 +329,7 @@ export function TodayScreen() {
               {todayCheckin.state}
             </div>
           </div>
-        </button>
-        <button
-          type="button"
-          onClick={() => setCheckinOpen(true)}
-          style={{
-            position: 'absolute',
-            top: '12px',
-            right: '14px',
-            background: 'none',
-            border: 'none',
-            color: 'var(--ink2)',
-            fontSize: '11px',
-            fontWeight: 600,
-            cursor: 'pointer',
-            fontFamily: 'inherit',
-            textDecoration: 'underline',
-            padding: '4px 2px',
-          }}
-        >
-          Re-check
+          <span aria-hidden style={{ fontSize: '16px', color: 'var(--ink2)' }}>›</span>
         </button>
         </div>
       )}
@@ -452,7 +454,11 @@ export function TodayScreen() {
         onClose={() => setSeasonalOpen(false)}
       />
 
-      <ReadinessSheet open={readinessOpen} onClose={() => setReadinessOpen(false)} />
+      <ReadinessSheet
+        open={readinessOpen}
+        onClose={() => setReadinessOpen(false)}
+        onRecheck={() => setCheckinOpen(true)}
+      />
     </div>
   )
 }
