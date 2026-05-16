@@ -137,7 +137,13 @@ export function TodayScreen() {
   const [seasonalOpen, setSeasonalOpen] = useState(false)
   useEffect(() => { loadCommitments() }, [loadCommitments])
   useEffect(() => {
-    if (commitmentsLoaded && shouldShowSeasonalPrompt(commitments)) setSeasonalOpen(true)
+    const show = commitmentsLoaded && shouldShowSeasonalPrompt(commitments)
+    console.log('[gate] showing commitment?', show, {
+      commitmentsLoaded,
+      commitmentCount: commitments.length,
+      commitments: commitments.map((c) => ({ season: c.season, year: c.year })),
+    })
+    if (show) setSeasonalOpen(true)
   }, [commitmentsLoaded, commitments])
 
   const basePlan: DailyPlan = appPicksForMe

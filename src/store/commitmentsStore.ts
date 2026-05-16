@@ -45,38 +45,51 @@ export const useCommitmentsStore = create<CommitmentsState & CommitmentsActions>
 
   load: async () => {
     const userId = useUserStore.getState().userId
-    if (!userId) return
+    if (!userId) {
+      console.log('[commitment] load skipped — no userId')
+      return
+    }
     try {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('commitments')
         .select('*')
         .eq('user_id', userId)
         .order('year', { ascending: false })
         .order('season', { ascending: false })
-      if (data) set({ commitments: data as Commitment[], loaded: true })
+      console.log('[commitment] load result:', { data, error, count: data?.length })
+      // Set loaded:true even on empty/error so the gate can resolve;
+      // commitments stays [] if nothing came back.
+      set({ commitments: (data as Commitment[]) ?? [], loaded: true })
     } catch (err) {
-      console.error('[commitments] load error', err)
+      console.error('[commitment] load error', err)
+      set({ loaded: true })
     }
   },
 
   create: async ({ season, year, name, why, focus }) => {
     const userId = useUserStore.getState().userId
-    if (!userId) return null
+    if (!userId) {
+      console.log('[commitment] create skipped — no userId')
+      return null
+    }
+    const payload = { user_id: userId, season, year, name, why, focus_dimension: focus }
+    console.log('[commitment] writing to commitments:', payload)
     try {
       const { data, error } = await supabase
         .from('commitments')
-        .insert({ user_id: userId, season, year, name, why, focus_dimension: focus })
+        .insert(payload)
         .select('*')
         .single()
+      console.log('[commitment] write result:', { data, error })
       if (error) {
-        console.error('[commitments] create error', error)
+        console.error('[commitment] create error', error)
         return null
       }
       const row = data as Commitment
       set((s) => ({ commitments: [row, ...s.commitments] }))
       return row
     } catch (err) {
-      console.error('[commitments] create exception', err)
+      console.error('[commitment] create exception', err)
       return null
     }
   },

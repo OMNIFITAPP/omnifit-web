@@ -29,7 +29,8 @@ export function SeasonalCommitmentPrompt({ open, onClose }: Props) {
   async function submit() {
     if (submitting || !focus || why.trim().length === 0) return
     setSubmitting(true)
-    await create({ season, year, name: name || null, why: why.trim(), focus })
+    const result = await create({ season, year, name: name || null, why: why.trim(), focus })
+    console.log('[commitment] submit() create returned:', result, '→ closing prompt regardless')
     setSubmitting(false)
     onClose()
   }
