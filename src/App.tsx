@@ -49,12 +49,14 @@ function useGate() {
 
   // Hydrate local store from session + profile
   useEffect(() => {
+    // Don't touch the persisted store until auth state is actually determined.
+    // Resetting during the initial indeterminate window wiped a returning
+    // user's persisted isOnboarded and flashed the onboarding flow every boot.
+    if (!checked) return
     if (!session?.user) {
-      console.log('[boot] no session.user → reset() called. isOnboarded before reset:', useUserStore.getState().isOnboarded)
       useUserStore.getState().reset()
       return
     }
-    console.log('[boot] session.user present:', session.user.id, 'isOnboarded(persisted):', useUserStore.getState().isOnboarded)
     const user = session.user
     setAuth({
       userId: user.id,
@@ -76,32 +78,12 @@ function useGate() {
     let cancelled = false
     ;(async () => {
       try {
-        // DIAGNOSTIC (3f.2): select * so we can see every column, including
-        // any onboarding-related field this code path doesn't currently read.
-        const { data: profile, error: profileError } = await supabase
+        const { data: profile } = await supabase
           .from('profiles')
-          .select('*')
+          .select('name, commit_why, focus_dim, subscription_status, plan_tier, trial_started_at, stripe_customer_id, stripe_subscription_id, app_picks_for_me, capacity_explained_dismissed, last_seen_date')
           .eq('id', user.id)
           .maybeSingle()
-
-        console.log('[boot] profile loaded:', profile)
-        console.log('[boot] profile fetch error:', profileError)
-        console.log('[boot] onboarded fields:', {
-          name: profile?.name,
-          focus_dim: profile?.focus_dim,
-          commit_why: profile?.commit_why,
-          trial_started_at: profile?.trial_started_at,
-          last_seen_date: profile?.last_seen_date,
-          app_picks_for_me: profile?.app_picks_for_me,
-          capacity_explained_dismissed: profile?.capacity_explained_dismissed,
-          // The actual gate: onboarding is INFERRED, not a column.
-          willInferOnboarded: !!(profile?.name && profile?.focus_dim && profile?.trial_started_at),
-        })
-
-        if (cancelled || !profile) {
-          console.log('[boot] aborting hydration:', { cancelled, hasProfile: !!profile })
-          return
-        }
+        if (cancelled || !profile) return
 
         if (profile.name && profile.focus_dim && profile.trial_started_at) {
           completeOnboarding({
@@ -110,9 +92,6 @@ function useGate() {
             dim: profile.focus_dim as Dimension,
             trialStartedAt: profile.trial_started_at as string,
           })
-          console.log('[boot] completeOnboarding() called → isOnboarded set true')
-        } else {
-          console.log('[boot] completeOnboarding() SKIPPED — isOnboarded stays', useUserStore.getState().isOnboarded)
         }
 
         if (profile.subscription_status) {
@@ -136,13 +115,12 @@ function useGate() {
           u.setLastSeenDate(profile.last_seen_date as string)
         }
         u.setProfileLoaded(true)
-      } catch (err) {
-        console.log('[boot] hydration threw:', err)
+      } catch {
         /* fall through to local defaults */
       }
     })()
     return () => { cancelled = true }
-  }, [session, setAuth, setSubscription, completeOnboarding])
+  }, [checked, session, setAuth, setSubscription, completeOnboarding])
 
   return {
     checked,
@@ -199,13 +177,6 @@ export default function App() {
   if (!gate.emailVerified) {
     return <VerifyEmailScreen email={gate.email} />
   }
-
-  console.log('[gate] showing welcome (onboarding)?', !gate.isOnboarded, {
-    isOnboarded: gate.isOnboarded,
-    checked: gate.checked,
-    hasSession: !!gate.session,
-    emailVerified: gate.emailVerified,
-  })
 
   if (!gate.isOnboarded) {
     return (

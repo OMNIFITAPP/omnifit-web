@@ -495,7 +495,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
         throw new Error("We couldn't confirm your session. Sign in again and retry.")
       }
 
-      const updatePayload = {
+      const { error: upsertErr } = await supabase.from('profiles').upsert({
         id: user.id,
         email: user.email,
         name: trimmedName,
@@ -504,16 +504,9 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
         subscription_status: 'trial',
         trial_started_at: trialStartedAt,
         member_since: trialStartedAt.split('T')[0],
-      }
-      console.log('[onboarding] writing to profile:', updatePayload)
-      const { data: upsertData, error: upsertErr } = await supabase
-        .from('profiles')
-        .upsert(updatePayload)
-        .select('*')
-      console.log('[onboarding] write result:', { data: upsertData, error: upsertErr })
+      })
       if (upsertErr) throw upsertErr
     } catch (err) {
-      console.log('[onboarding] write threw:', err)
       setSubmitError(err instanceof Error ? err.message : "We couldn't save your commitment. Try again.")
       setIsSubmitting(false)
       return

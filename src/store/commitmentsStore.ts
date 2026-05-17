@@ -45,10 +45,7 @@ export const useCommitmentsStore = create<CommitmentsState & CommitmentsActions>
 
   load: async () => {
     const userId = useUserStore.getState().userId
-    if (!userId) {
-      console.log('[commitment] load skipped — no userId')
-      return
-    }
+    if (!userId) return
     try {
       const { data, error } = await supabase
         .from('commitments')
@@ -56,33 +53,28 @@ export const useCommitmentsStore = create<CommitmentsState & CommitmentsActions>
         .eq('user_id', userId)
         .order('year', { ascending: false })
         .order('season', { ascending: false })
-      console.log('[commitment] load result:', { data, error, count: data?.length })
+      if (error) console.error('[commitments] load error', error)
       // Set loaded:true even on empty/error so the gate can resolve;
       // commitments stays [] if nothing came back.
       set({ commitments: (data as Commitment[]) ?? [], loaded: true })
     } catch (err) {
-      console.error('[commitment] load error', err)
+      console.error('[commitments] load error', err)
       set({ loaded: true })
     }
   },
 
   create: async ({ season, year, name, why, focus }) => {
     const userId = useUserStore.getState().userId
-    if (!userId) {
-      console.log('[commitment] create skipped — no userId')
-      return null
-    }
+    if (!userId) return null
     const payload = { user_id: userId, season, year, name, why, focus_dimension: focus }
-    console.log('[commitment] writing to commitments:', payload)
     try {
       const { data, error } = await supabase
         .from('commitments')
         .insert(payload)
         .select('*')
         .single()
-      console.log('[commitment] write result:', { data, error })
       if (error) {
-        console.error('[commitment] create error', error)
+        console.error('[commitments] create error', error)
         return null
       }
       const row = data as Commitment

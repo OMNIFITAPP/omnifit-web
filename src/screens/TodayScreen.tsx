@@ -102,7 +102,6 @@ export function TodayScreen() {
     const d = new Date()
     const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 
-    console.log('[autoCheckin]', { profile_last_seen: lastSeenDate, todayISO: today, profileLoaded })
     if (lastSeenDate === today) return
 
     let cancelled = false
@@ -124,7 +123,6 @@ export function TodayScreen() {
       setLastSeenDate(today)
       supabase.from('profiles').update({ last_seen_date: today }).eq('id', userId).then(() => {})
 
-      console.log('[autoCheckin] decision', { hasCheckin, willOpen: !hasCheckin })
       if (!hasCheckin) setCheckinOpen(true)
     })()
     return () => { cancelled = true }
@@ -137,13 +135,7 @@ export function TodayScreen() {
   const [seasonalOpen, setSeasonalOpen] = useState(false)
   useEffect(() => { loadCommitments() }, [loadCommitments])
   useEffect(() => {
-    const show = commitmentsLoaded && shouldShowSeasonalPrompt(commitments)
-    console.log('[gate] showing commitment?', show, {
-      commitmentsLoaded,
-      commitmentCount: commitments.length,
-      commitments: commitments.map((c) => ({ season: c.season, year: c.year })),
-    })
-    if (show) setSeasonalOpen(true)
+    if (commitmentsLoaded && shouldShowSeasonalPrompt(commitments)) setSeasonalOpen(true)
   }, [commitmentsLoaded, commitments])
 
   const basePlan: DailyPlan = appPicksForMe

@@ -30,9 +30,10 @@ export function SeasonalCommitmentPrompt({ open, onClose }: Props) {
     if (submitting || !focus || why.trim().length === 0) return
     setSubmitting(true)
     const result = await create({ season, year, name: name || null, why: why.trim(), focus })
-    console.log('[commitment] submit() create returned:', result, '→ closing prompt regardless')
     setSubmitting(false)
-    onClose()
+    // Only close on success — a failed insert keeps the prompt so the user
+    // can retry instead of silently losing the commitment.
+    if (result) onClose()
   }
 
   return (
