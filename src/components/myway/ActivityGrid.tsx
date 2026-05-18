@@ -10,7 +10,8 @@ import { PlanTomorrowOverlay } from '../today/PlanTomorrowOverlay'
 
 const TIER_WEIGHT: Record<string, number> = { P: 3, S: 2, M: 1 }
 const COLS_BY_VIEW = { month: 5, quarter: 13, year: 52 } as const
-const SQ_BY_VIEW   = { month: 28, quarter: 18, year: 9 } as const
+const SQ_BY_VIEW   = { month: 28, quarter: 18, year: 6 } as const
+const GAP_BY_VIEW  = { month: 4,  quarter: 3,  year: 1 } as const
 type View = keyof typeof COLS_BY_VIEW
 
 const MONTH_SHORT  = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
@@ -129,7 +130,7 @@ export function ActivityGrid({ onOpenCalendar }: ActivityGridProps = {}) {
   }
 
   const sq = SQ_BY_VIEW[view]
-  const gap = 3
+  const gap = GAP_BY_VIEW[view]
 
   return (
     <section
@@ -201,56 +202,66 @@ export function ActivityGrid({ onOpenCalendar }: ActivityGridProps = {}) {
         </div>
       </div>
 
-      {/* Grid */}
+      {/* Grid — explicit 7 rows × N columns. grid-auto-flow:column fills
+          Mon→Sun top-to-bottom, column by column. Children are emitted in
+          column-major order to match. Year view scrolls horizontally if the
+          52 columns can't fit. */}
       <div
+        className="no-scrollbar"
         style={{
-          display: 'grid',
-          gridTemplateColumns: `repeat(${columns.length}, ${sq}px)`,
-          gridAutoRows: `${sq}px`,
-          columnGap: `${gap}px`,
-          rowGap: `${gap}px`,
-          justifyContent: 'center',
+          overflowX: 'auto',
+          WebkitOverflowScrolling: 'touch',
+          display: 'flex',
+          justifyContent: view === 'year' ? 'flex-start' : 'center',
         }}
       >
-        {/* Render row-major: 7 rows × N cols, but columns array is col-major → flatten */}
-        {Array.from({ length: 7 }, (_, r) =>
-          columns.map((col, c) => {
-            const d = col[r]
-            const iso = isoDate(d)
-            const sum = intensity[iso] ?? 0
-            const op = opacityFor(sum)
-            const isToday = iso === todayISO
-            const outOfWindow = d > today                  // future cells still tappable, just empty
-            const cellStyle: React.CSSProperties = {
-              width: `${sq}px`,
-              height: `${sq}px`,
-              borderRadius: '3px',
-              gridColumn: c + 1,
-              gridRow: r + 1,
-              cursor: 'pointer',
-              border: isToday ? '1.5px solid var(--ink)' : 'none',
-              background: op === null
-                ? 'var(--card)'
-                : `color-mix(in oklab, var(--ink) ${Math.round(op * 100)}%, transparent)`,
-              boxSizing: 'border-box',
-              padding: 0,
-              fontFamily: 'inherit',
-            }
-            if (op === null && !isToday) {
-              cellStyle.border = '1px solid var(--line)'
-            }
-            return (
-              <button
-                key={`${c}-${r}`}
-                type="button"
-                onClick={() => handleCellTap(d)}
-                aria-label={d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
-                style={cellStyle}
-                disabled={outOfWindow && view !== 'month' && view !== 'quarter' && view !== 'year' ? true : false}
-              />
-            )
-          })
-        )}
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateRows: `repeat(7, ${sq}px)`,
+            gridTemplateColumns: `repeat(${columns.length}, ${sq}px)`,
+            gridAutoFlow: 'column',
+            columnGap: `${gap}px`,
+            rowGap: `${gap}px`,
+          }}
+        >
+          {columns.flatMap((col, c) =>
+            col.map((d, r) => {
+              const iso = isoDate(d)
+              const sum = intensity[iso] ?? 0
+              const op = opacityFor(sum)
+              const isToday = iso === todayISO
+              const cellStyle: React.CSSProperties = {
+                width: `${sq}px`,
+                height: `${sq}px`,
+                aspectRatio: '1 / 1',
+                borderRadius: sq <= 8 ? '1px' : '3px',
+                cursor: 'pointer',
+                border: isToday ? '1.5px solid var(--ink)' : 'none',
+                background: op === null
+                  ? 'var(--card)'
+                  : `color-mix(in oklab, var(--ink) ${Math.round(op * 100)}%, transparent)`,
+                boxSizing: 'border-box',
+                padding: 0,
+                margin: 0,
+                fontFamily: 'inherit',
+                flexShrink: 0,
+              }
+              if (op === null && !isToday) {
+                cellStyle.border = '1px solid var(--line)'
+              }
+              return (
+                <button
+                  key={`${c}-${r}`}
+                  type="button"
+                  onClick={() => handleCellTap(d)}
+                  aria-label={d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                  style={cellStyle}
+                />
+              )
+            })
+          )}
+        </div>
       </div>
 
       {/* Month labels along the bottom edge */}

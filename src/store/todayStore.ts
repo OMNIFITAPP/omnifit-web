@@ -50,7 +50,11 @@ export const useTodayStore = create<TodayState & TodayActions>()(
         set((s) => ({ plan: { ...s.plan, [dim]: tier } })),
 
       toggleChecked: (dim) =>
-        set((s) => ({ checked: { ...s.checked, [dim]: !s.checked[dim] } })),
+        set((s) => {
+          const next = !s.checked[dim]
+          console.log('[completion] local store set:', { dim, checked: next, date: s.planDate })
+          return { checked: { ...s.checked, [dim]: next } }
+        }),
 
       ensureFreshDay: () => {
         const d = new Date()

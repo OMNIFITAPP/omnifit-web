@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { DIM_MAP } from '../data/dims'
 import { getSession, TIER_LABELS } from '../data/sessions'
@@ -7,6 +7,7 @@ import { useTodayStore } from '../store/todayStore'
 import { useUserStore } from '../store/userStore'
 import { supabase } from '../lib/supabase'
 import { playChime } from '../lib/chime'
+import { unlockBell, ringBell } from '../lib/bell'
 import type { Dimension, SessionStep } from '../types'
 
 function isValidTier(t: string): t is 'P' | 'S' | 'M' {
@@ -57,6 +58,20 @@ function PracticeFlow({ dim, tier }: { dim: Dimension; tier: 'P' | 'S' | 'M' }) 
       setRemaining(current.seconds ?? 30)
     }
   }, [stepIndex, current])
+
+  // Ring the bell on every step→step transition (a step ended, the next began).
+  // Not on intro→step 0 (that's the Start tap) and not at completion (the
+  // completion screen plays its own chime).
+  const prevStepRef = useRef<number>(-1)
+  useEffect(() => {
+    const prev = prevStepRef.current
+    prevStepRef.current = stepIndex
+    const isStepToStep =
+      prev >= 0 && stepIndex >= 0 && stepIndex < totalSteps && stepIndex !== prev
+    if (isStepToStep && useUserStore.getState().completionSound) {
+      ringBell()
+    }
+  }, [stepIndex, totalSteps])
 
   // Countdown tick for auto/rest steps
   useEffect(() => {
@@ -133,8 +148,9 @@ function PracticeFlow({ dim, tier }: { dim: Dimension; tier: 'P' | 'S' | 'M' }) 
   const handleMarkDone = useCallback((felt: 'easy' | 'right' | 'hard' | null) => {
     if (!alreadyChecked) toggleChecked(dim)
     const userId = useUserStore.getState().userId
+    console.log('[completion] handleMarkDone fired:', { userId, dim, tier, alreadyChecked })
     if (userId) {
-      supabase.from('session_completions').insert({
+      const payload = {
         user_id: userId,
         dimension: dim,
         tier,
@@ -142,7 +158,16 @@ function PracticeFlow({ dim, tier }: { dim: Dimension; tier: 'P' | 'S' | 'M' }) 
         felt,
         completed_at: new Date().toISOString(),
         duration_seconds: durationSec,
-      })
+      }
+      console.log('[completion] attempting insert:', payload)
+      supabase
+        .from('session_completions')
+        .insert(payload)
+        .then(({ data, error }) => {
+          console.log('[completion] insert result:', { data, error })
+        })
+    } else {
+      console.log('[completion] NO userId — insert skipped, local-only')
     }
     navigate(-1)
   }, [alreadyChecked, dim, tier, session.name, durationSec, navigate, toggleChecked])
@@ -329,7 +354,7 @@ function PracticeFlow({ dim, tier }: { dim: Dimension; tier: 'P' | 'S' | 'M' }) 
           {isIntro ? (
             <button
               type="button"
-              onClick={() => { setStartedAt(Date.now()); setStepIndex(0) }}
+              onClick={() => { unlockBell(); setStartedAt(Date.now()); setStepIndex(0) }}
               style={{
                 flex: 1,
                 padding: '16px',
