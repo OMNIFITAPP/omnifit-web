@@ -11,8 +11,8 @@ export function ProgressTab() {
 
   return (
     <div>
-      {/* 1. Activity grid (with embedded View calendar link) */}
-      <ActivityGrid onOpenCalendar={() => setCalendarOpen(true)} />
+      {/* 1. Activity — current-season grid (toggle lives in the calendar modal) */}
+      <ActivityGrid variant="season" onOpenCalendar={() => setCalendarOpen(true)} />
 
       {/* 2. Capacity */}
       <CapacityBars activeDims={activeDims} />

@@ -43,6 +43,35 @@ function buildColumns(view: View, today: Date): Date[][] {
   })
 }
 
+/** Current calendar season (Northern hemisphere). */
+function currentSeason(d: Date): { name: string; year: number; startMonthDate: Date } {
+  const m = d.getMonth()
+  const y = d.getFullYear()
+  if (m >= 2 && m <= 4)  return { name: 'Spring', year: y, startMonthDate: new Date(y, 2, 1) }
+  if (m >= 5 && m <= 7)  return { name: 'Summer', year: y, startMonthDate: new Date(y, 5, 1) }
+  if (m >= 8 && m <= 10) return { name: 'Autumn', year: y, startMonthDate: new Date(y, 8, 1) }
+  if (m === 11)          return { name: 'Winter', year: y, startMonthDate: new Date(y, 11, 1) }
+  // Jan/Feb — winter that began the previous December
+  return { name: 'Winter', year: y, startMonthDate: new Date(y - 1, 11, 1) }
+}
+
+/** Week-columns from the Monday on/before the season's first day, through the
+ *  week containing today. */
+function buildSeasonColumns(seasonStart: Date, today: Date): Date[][] {
+  const start = mondayOf(seasonStart)
+  const end = mondayOf(today)
+  const weeks = Math.max(1, Math.round((end.getTime() - start.getTime()) / (7 * 864e5)) + 1)
+  return Array.from({ length: weeks }, (_, c) => {
+    const colMonday = new Date(start)
+    colMonday.setDate(start.getDate() + c * 7)
+    return Array.from({ length: 7 }, (_, r) => {
+      const d = new Date(colMonday)
+      d.setDate(colMonday.getDate() + r)
+      return d
+    })
+  })
+}
+
 /** Choose ink opacity for a given day's intensity. */
 function opacityFor(weightSum: number): number | null {
   if (weightSum <= 0) return null            // empty cell — render with border/card bg
@@ -53,24 +82,36 @@ function opacityFor(weightSum: number): number | null {
 }
 
 interface ActivityGridProps {
+  /** 'season' = the Progress card (fixed current-season grid, no toggle).
+   *  'toggle' = inside the calendar modal (Month/Quarter/Year toggle). */
+  variant?: 'season' | 'toggle'
   onOpenCalendar?: () => void
 }
 
-export function ActivityGrid({ onOpenCalendar }: ActivityGridProps = {}) {
+export function ActivityGrid({ variant = 'season', onOpenCalendar }: ActivityGridProps = {}) {
   const userId = useUserStore((s) => s.userId)
   const focusDim = useUserStore((s) => s.focusDim)
   const activeDims = useUserStore((s) => s.activeDims)
   const weekOverrides = useWeekStore((s) => s.plans)
   const setDayTier = useWeekStore((s) => s.setDayTier)
 
-  const [view, setView] = useState<View>('month')
+  // Toggle variant defaults to Quarter (continuous with the season card).
+  const [view, setView] = useState<View>('quarter')
   const [intensity, setIntensity] = useState<Record<string, number>>({})
   const [dayPickedISO, setDayPickedISO] = useState<string | null>(null)
   const [planISO, setPlanISO] = useState<string | null>(null)
 
   const today = useMemo(() => new Date(), [])
   const todayISO = isoDate(today)
-  const columns = useMemo(() => buildColumns(view, today), [view, today])
+  const season = useMemo(() => currentSeason(today), [today])
+  const columns = useMemo(
+    () => variant === 'season'
+      ? buildSeasonColumns(season.startMonthDate, today)
+      : buildColumns(view, today),
+    [variant, view, today, season],
+  )
+  // Season grid uses quarter-density cells; toggle grid uses per-view sizing.
+  const sizingView: View = variant === 'season' ? 'quarter' : view
 
   // Window bounds — first cell of column 0, last cell of last column.
   const windowStart = columns[0][0]
@@ -100,12 +141,12 @@ export function ActivityGrid({ onOpenCalendar }: ActivityGridProps = {}) {
       })
     return () => { cancelled = true }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId, view])
+  }, [userId, view, variant])
 
-  // Month labels — emit at the column where a new month begins. For the year
-  // view, use a single-letter label so 12 labels fit across 52 narrow columns
-  // without overlapping.
-  const labelTable = view === 'year' ? MONTH_LETTER : MONTH_SHORT
+  // Month labels — emit at the column where a new month begins. Year view uses
+  // single-letter labels (12 across 52 narrow columns); season/quarter/month
+  // use 3-letter abbreviations.
+  const labelTable = sizingView === 'year' ? MONTH_LETTER : MONTH_SHORT
   const monthLabels: Array<{ col: number; label: string }> = []
   let lastMonth = -1
   for (let c = 0; c < columns.length; c++) {
@@ -115,8 +156,8 @@ export function ActivityGrid({ onOpenCalendar }: ActivityGridProps = {}) {
       lastMonth = m
     }
   }
-  // For 1-month view, force a single centered current-month label.
-  const centeredSingleLabel = view === 'month'
+  // Toggle/Month view shows one centered current-month label.
+  const centeredSingleLabel = variant === 'toggle' && view === 'month'
     ? today.toLocaleDateString('en-US', { month: 'long' })
     : null
 
@@ -129,8 +170,8 @@ export function ActivityGrid({ onOpenCalendar }: ActivityGridProps = {}) {
     }
   }
 
-  const sq = SQ_BY_VIEW[view]
-  const gap = GAP_BY_VIEW[view]
+  const sq = SQ_BY_VIEW[sizingView]
+  const gap = GAP_BY_VIEW[sizingView]
 
   return (
     <section
@@ -141,7 +182,7 @@ export function ActivityGrid({ onOpenCalendar }: ActivityGridProps = {}) {
         padding: '18px 16px 14px',
       }}
     >
-      {/* Header row: title + view toggle */}
+      {/* Header — season eyebrow (card) OR Month/Quarter/Year toggle (modal) */}
       <div
         style={{
           display: 'flex',
@@ -160,46 +201,50 @@ export function ActivityGrid({ onOpenCalendar }: ActivityGridProps = {}) {
             color: 'var(--ink2)',
           }}
         >
-          Activity
+          {variant === 'season'
+            ? `${season.name} ${season.year} · Activity`
+            : 'Activity'}
         </div>
-        <div
-          role="tablist"
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(3, 1fr)',
-            background: 'var(--cream)',
-            border: '1px solid var(--line)',
-            borderRadius: '10px',
-            padding: '2px',
-            gap: '2px',
-          }}
-        >
-          {(['month', 'quarter', 'year'] as View[]).map((v) => {
-            const active = v === view
-            return (
-              <button
-                key={v}
-                type="button"
-                onClick={() => setView(v)}
-                style={{
-                  fontSize: '10px',
-                  fontWeight: 600,
-                  letterSpacing: '0.04em',
-                  textTransform: 'uppercase',
-                  padding: '5px 10px',
-                  borderRadius: '8px',
-                  border: 'none',
-                  background: active ? 'var(--ink)' : 'transparent',
-                  color: active ? 'var(--cream)' : 'var(--ink2)',
-                  cursor: 'pointer',
-                  fontFamily: 'inherit',
-                }}
-              >
-                {v === 'month' ? 'Month' : v === 'quarter' ? 'Quarter' : 'Year'}
-              </button>
-            )
-          })}
-        </div>
+        {variant === 'toggle' && (
+          <div
+            role="tablist"
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(3, 1fr)',
+              background: 'var(--cream)',
+              border: '1px solid var(--line)',
+              borderRadius: '10px',
+              padding: '2px',
+              gap: '2px',
+            }}
+          >
+            {(['month', 'quarter', 'year'] as View[]).map((v) => {
+              const active = v === view
+              return (
+                <button
+                  key={v}
+                  type="button"
+                  onClick={() => setView(v)}
+                  style={{
+                    fontSize: '10px',
+                    fontWeight: 600,
+                    letterSpacing: '0.04em',
+                    textTransform: 'uppercase',
+                    padding: '5px 10px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    background: active ? 'var(--ink)' : 'transparent',
+                    color: active ? 'var(--cream)' : 'var(--ink2)',
+                    cursor: 'pointer',
+                    fontFamily: 'inherit',
+                  }}
+                >
+                  {v === 'month' ? 'Month' : v === 'quarter' ? 'Quarter' : 'Year'}
+                </button>
+              )
+            })}
+          </div>
+        )}
       </div>
 
       {/* Grid — explicit 7 rows × N columns. grid-auto-flow:column fills
@@ -299,23 +344,25 @@ export function ActivityGrid({ onOpenCalendar }: ActivityGridProps = {}) {
         )}
       </div>
 
-      {/* View calendar entry — replaces the old "This week ›" button */}
-      <button
-        type="button"
-        onClick={() => onOpenCalendar?.()}
-        style={{
-          marginTop: '8px',
-          background: 'none',
-          border: 'none',
-          padding: 0,
-          color: 'var(--ink2)',
-          fontSize: '12px',
-          fontFamily: 'inherit',
-          cursor: 'pointer',
-        }}
-      >
-        View calendar →
-      </button>
+      {/* View calendar entry — season card only (the modal already IS the calendar) */}
+      {variant === 'season' && (
+        <button
+          type="button"
+          onClick={() => onOpenCalendar?.()}
+          style={{
+            marginTop: '8px',
+            background: 'none',
+            border: 'none',
+            padding: 0,
+            color: 'var(--ink2)',
+            fontSize: '12px',
+            fontFamily: 'inherit',
+            cursor: 'pointer',
+          }}
+        >
+          View calendar →
+        </button>
+      )}
 
       <DaySheet
         open={!!dayPickedISO}

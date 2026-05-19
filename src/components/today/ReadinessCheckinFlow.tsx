@@ -217,21 +217,23 @@ function QuestionView({
 }
 
 function ResultView({ result, onClose }: { result: Checkin; onClose: () => void }) {
-  // Three vertical regions per spec:
-  //   1. Top spacer — flex: 1 (auto-fills above content)
-  //   2. Center content — flex-shrink: 0 (state word + coaching)
-  //   3. Bottom button — flex-shrink: 0 with safe-area padding
+  // Fill the dialog, space-between: content in the upper portion, an explicit
+  // CTA button anchored at the bottom above the safe-area inset. No scrolling
+  // required at 390x844.
   return (
-    <>
-      {/* 1. Top spacer */}
-      <div style={{ flex: 1 }} aria-hidden />
-
-      {/* 2. Center content */}
+    <div
+      style={{
+        flex: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between',
+      }}
+    >
+      {/* Content — upper portion */}
       <div
         style={{
-          flexShrink: 0,
           textAlign: 'center',
-          padding: '0 28px',
+          padding: '64px 28px 0',
         }}
       >
         <div
@@ -271,12 +273,11 @@ function ResultView({ result, onClose }: { result: Checkin; onClose: () => void 
         </p>
       </div>
 
-      {/* 3. Bottom button */}
+      {/* Anchored CTA */}
       <div
         style={{
-          flexShrink: 0,
-          padding: '24px 20px',
-          paddingBottom: 'calc(20px + env(safe-area-inset-bottom, 0px))',
+          padding: '24px 20px 0',
+          marginBottom: 'calc(32px + env(safe-area-inset-bottom, 0px))',
         }}
       >
         <button
@@ -295,9 +296,9 @@ function ResultView({ result, onClose }: { result: Checkin; onClose: () => void 
             cursor: 'pointer',
           }}
         >
-          Return to today
+          Continue
         </button>
       </div>
-    </>
+    </div>
   )
 }

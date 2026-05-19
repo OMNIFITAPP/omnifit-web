@@ -51,13 +51,36 @@ function PracticeFlow({ dim, tier }: { dim: Dimension; tier: 'P' | 'S' | 'M' }) 
   const current: SessionStep | null =
     stepIndex >= 0 && stepIndex < totalSteps ? session.steps[stepIndex] : null
 
-  // Reset timer when step changes
+  // Wall-clock timer state. endAtRef = timestamp the step should complete.
+  // pausedRemainingRef = ms left captured at the moment of pause.
+  const endAtRef = useRef<number | null>(null)
+  const pausedRemainingRef = useRef<number | null>(null)
+
+  // (Re)arm the wall-clock target when the step changes.
   useEffect(() => {
-    if (!current) return
+    if (!current) { endAtRef.current = null; return }
     if (current.mode === 'auto' || current.mode === 'rest') {
-      setRemaining(current.seconds ?? 30)
+      const secs = current.seconds ?? 30
+      endAtRef.current = Date.now() + secs * 1000
+      pausedRemainingRef.current = null
+      setRemaining(secs)
+    } else {
+      endAtRef.current = null
     }
   }, [stepIndex, current])
+
+  // Pause/resume shifts the target by the elapsed-while-paused amount.
+  useEffect(() => {
+    if (!current || current.mode === 'tap') return
+    if (paused) {
+      if (endAtRef.current != null) {
+        pausedRemainingRef.current = Math.max(0, endAtRef.current - Date.now())
+      }
+    } else if (pausedRemainingRef.current != null) {
+      endAtRef.current = Date.now() + pausedRemainingRef.current
+      pausedRemainingRef.current = null
+    }
+  }, [paused, current])
 
   // Ring the bell on every step→step transition (a step ended, the next began).
   // Not on intro→step 0 (that's the Start tap) and not at completion (the
@@ -73,22 +96,25 @@ function PracticeFlow({ dim, tier }: { dim: Dimension; tier: 'P' | 'S' | 'M' }) 
     }
   }, [stepIndex, totalSteps])
 
-  // Countdown tick for auto/rest steps
+  // Countdown tick — every 250ms but elapsed is computed from wall-clock
+  // delta, so a throttled/suspended interval (screen sleep, tab background)
+  // self-corrects on the next tick instead of drifting or stalling.
   useEffect(() => {
     if (!current) return
     if (current.mode === 'tap') return
     if (paused) return
+    let advanced = false
     const id = setInterval(() => {
-      setRemaining((r) => {
-        if (r <= 1) {
-          clearInterval(id)
-          // Advance on next tick so we don't batch-update during render
-          setTimeout(() => setStepIndex((i) => i + 1), 0)
-          return 0
-        }
-        return r - 1
-      })
-    }, 1000)
+      if (endAtRef.current == null) return
+      const remMs = endAtRef.current - Date.now()
+      const remSecs = Math.max(0, Math.ceil(remMs / 1000))
+      setRemaining(remSecs)
+      if (remMs <= 0 && !advanced) {
+        advanced = true
+        clearInterval(id)
+        setTimeout(() => setStepIndex((i) => i + 1), 0)
+      }
+    }, 250)
     return () => clearInterval(id)
   }, [current, paused, stepIndex])
 
@@ -111,6 +137,48 @@ function PracticeFlow({ dim, tier }: { dim: Dimension; tier: 'P' | 'S' | 'M' }) 
       if (useUserStore.getState().completionSound) playChime()
     }
   }, [isComplete, endedAt])
+
+  // Screen Wake Lock — keep the display on while a session is mid-flight so
+  // the OS doesn't sleep the phone and freeze the timer. Layer 2 (wall-clock
+  // delta above) covers us if the lock is unavailable or revoked.
+  const sessionActive = !isIntro && !isComplete
+  const wakeLockRef = useRef<WakeLockSentinel | null>(null)
+  useEffect(() => {
+    let released = false
+    const nav = navigator as Navigator & { wakeLock?: { request: (t: 'screen') => Promise<WakeLockSentinel> } }
+
+    async function acquire() {
+      if (!sessionActive || !nav.wakeLock) return
+      try {
+        wakeLockRef.current = await nav.wakeLock.request('screen')
+        console.log('[wakeLock] acquired')
+      } catch (err) {
+        console.log('[wakeLock] failed:', err)
+      }
+    }
+    function release() {
+      if (wakeLockRef.current && !released) {
+        released = true
+        wakeLockRef.current.release().catch(() => {})
+        wakeLockRef.current = null
+        console.log('[wakeLock] released')
+      }
+    }
+    function onVisibility() {
+      if (document.visibilityState === 'visible' && sessionActive && !wakeLockRef.current) {
+        acquire()
+      }
+    }
+
+    if (sessionActive) {
+      acquire()
+      document.addEventListener('visibilitychange', onVisibility)
+    }
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility)
+      release()
+    }
+  }, [sessionActive])
 
   // Load past felt ratings for this session → "Last time: …" / "Usually feels: …"
   const [feltSummary, setFeltSummary] = useState<string | null>(null)
@@ -159,13 +227,28 @@ function PracticeFlow({ dim, tier }: { dim: Dimension; tier: 'P' | 'S' | 'M' }) 
         completed_at: new Date().toISOString(),
         duration_seconds: durationSec,
       }
-      console.log('[completion] attempting insert:', payload)
-      supabase
-        .from('session_completions')
-        .insert(payload)
-        .then(({ data, error }) => {
-          console.log('[completion] insert result:', { data, error })
-        })
+      const startOfToday = new Date()
+      startOfToday.setHours(0, 0, 0, 0)
+      ;(async () => {
+        // Dedup (3f.3 rule 3): one completion per (user,dim,calendar-day).
+        const { data: existing } = await supabase
+          .from('session_completions')
+          .select('id')
+          .eq('user_id', userId)
+          .eq('dimension', dim)
+          .gte('completed_at', startOfToday.toISOString())
+          .limit(1)
+        if (existing && existing.length > 0) {
+          console.log('[completion] full-flow no-op — row already exists today', { dim })
+          return
+        }
+        console.log('[completion] attempting insert:', payload)
+        const { data, error } = await supabase
+          .from('session_completions')
+          .insert(payload)
+          .select()
+        console.log('[completion] insert result:', { data, error })
+      })()
     } else {
       console.log('[completion] NO userId — insert skipped, local-only')
     }

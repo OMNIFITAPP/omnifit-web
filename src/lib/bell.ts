@@ -111,6 +111,6 @@ export function ringBell(): void {
     }
   }
   if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
-    navigator.vibrate(200)
+    navigator.vibrate(300)
   }
 }

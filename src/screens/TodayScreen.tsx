@@ -21,6 +21,7 @@ import { SeasonalCommitmentPrompt } from '../components/today/SeasonalCommitment
 import { useCommitmentsStore, shouldShowSeasonalPrompt } from '../store/commitmentsStore'
 import { ReadinessSheet } from '../components/myway/ReadinessSheet'
 import { supabase } from '../lib/supabase'
+import { getSession } from '../data/sessions'
 import { computeTrial } from '../lib/trial'
 import type { DimConfig, Tier, Dimension, DailyPlan } from '../types'
 
@@ -167,6 +168,65 @@ export function TodayScreen() {
 
   const isRestDay = todayCheckin?.state === 'Rest is the move'
   const greyAll = !!isRestDay
+
+  // Today checkmark → session_completions write (3f.3 rules):
+  // 1. tap ✓ inserts a row (duration/felt null)
+  // 2. tap ✓ off deletes today's row for that (user,dim)
+  // 3. dedup by (user,dim,calendar-day) — no-op insert if a row exists
+  // 4. tier travels on the row so capacity weighting works normally
+  function handleToggleCheck(k: Dimension) {
+    const wasChecked = checked[k]
+    toggleChecked(k) // optimistic local mirror
+    const uid = useUserStore.getState().userId
+    if (!uid) return
+    const t = effectivePlan[k]
+    if (t === 'R') return
+    const startOfToday = new Date()
+    startOfToday.setHours(0, 0, 0, 0)
+    ;(async () => {
+      if (!wasChecked) {
+        // now checked → insert unless a completion already exists today
+        const { data: existing } = await supabase
+          .from('session_completions')
+          .select('id')
+          .eq('user_id', uid)
+          .eq('dimension', k)
+          .gte('completed_at', startOfToday.toISOString())
+          .limit(1)
+        if (existing && existing.length > 0) {
+          console.log('[completion] checkmark no-op — row already exists today', { dim: k })
+          return
+        }
+        const session = getSession(k, t as 'P' | 'S' | 'M')
+        const payload = {
+          user_id: uid,
+          dimension: k,
+          tier: t,
+          session_name: session.name,
+          felt: null,
+          duration_seconds: null,
+          completed_at: new Date().toISOString(),
+        }
+        console.log('[completion] attempting insert:', payload)
+        const { data, error } = await supabase
+          .from('session_completions')
+          .insert(payload)
+          .select()
+        console.log('[completion] insert result:', { data, error })
+      } else {
+        // now unchecked → remove today's completion(s) for that dim
+        console.log('[completion] checkmark off — deleting today row', { dim: k })
+        const { data, error } = await supabase
+          .from('session_completions')
+          .delete()
+          .eq('user_id', uid)
+          .eq('dimension', k)
+          .gte('completed_at', startOfToday.toISOString())
+          .select()
+        console.log('[completion] delete result:', { data, error })
+      }
+    })()
+  }
 
   // Tomorrow preview — same compute as Today's followPlan, one day ahead.
   const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1)
@@ -361,7 +421,7 @@ export function TodayScreen() {
           if (t !== 'R') navigate(`/session/${k}/${t}`)
         }}
         onOpenSwap={(dim) => setSwapDim(dim)}
-        onToggleCheck={(k) => toggleChecked(k)}
+        onToggleCheck={(k) => handleToggleCheck(k)}
         onReorder={handleReorder}
       />
 

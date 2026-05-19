@@ -7,6 +7,7 @@ import { followPlanFor } from '../../data/followPlan'
 import { isoDate, TIER_WEIGHT } from '../../data/week'
 import type { Tier } from '../../types'
 import { DaySheet } from './DaySheet'
+import { ActivityGrid } from './ActivityGrid'
 import { PlanTomorrowOverlay } from '../today/PlanTomorrowOverlay'
 
 interface Props {
@@ -380,6 +381,11 @@ function MonthlyCalendarInner({ open, onClose }: Props) {
           padding: '8px 16px 36px',
         }}
       >
+        {/* Heatmap with the Month/Quarter/Year toggle (moved off the Progress card) */}
+        <div style={{ marginBottom: '16px' }}>
+          <ActivityGrid variant="toggle" />
+        </div>
+
         <div
           style={{
             display: 'grid',
